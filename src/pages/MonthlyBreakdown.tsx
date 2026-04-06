@@ -40,7 +40,7 @@ export default function MonthlyBreakdown() {
     setSearchParams(prev => { prev.set('view', v); return prev }, { replace: true })
   }
 
-  const hasFilters = Object.values(filters).some(v => v !== undefined && v !== '')
+  const [includeClosingCosts, setIncludeClosingCosts] = useState(false)
 
   const summaryWithCumulative = useMemo(() => {
     if (!monthlySummary || monthlySummary.length === 0) return []
@@ -48,15 +48,63 @@ export default function MonthlyBreakdown() {
     const chronological = [...monthlySummary].sort((a, b) => a.month.localeCompare(b.month))
     let cum = 0
     return chronological.map(row => {
-      cum += row.net_cash_flow
-      return { ...row, cumulative_cf: cum }
+      const cc = includeClosingCosts ? (row.closing_costs || 0) : 0
+      const net = row.net_cash_flow - cc
+      cum += net
+      return { 
+        ...row, 
+        display_expenses: row.expenses - cc, 
+        display_net: net,
+        cumulative_cf: cum 
+      }
     }).reverse() // Display newest at the top
-  }, [monthlySummary])
+  }, [monthlySummary, includeClosingCosts])
+
+  const hasFilters = Object.values(filters).some(v => v !== undefined && v !== '')
+
+  const displayTransactions = useMemo(() => {
+    if (includeClosingCosts) return transactions
+
+    return transactions
+      .filter(tx => tx.tag_name !== 'Closing Costs' && tx.tag_name !== 'Down Payment')
+      .map(tx => {
+        if (!tx.breakdown) return tx
+        
+        // Operational Mode: Hide Principal and adjust the effective amount
+        const opLines = tx.breakdown.filter(line => line.label !== 'Principal')
+        const opAmount = opLines.reduce((sum, line) => sum + (line.amount || 0), 0)
+        
+        return {
+          ...tx,
+          amount: tx.amount < 0 ? -opAmount : opAmount,
+          breakdown: opLines
+        }
+      })
+  }, [transactions, includeClosingCosts])
 
   return (
     <main className="page-content">
-      <div className="section-header" style={{ marginBottom: 24 }}>
+      <div className="section-header" style={{ marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: '1.25rem' }}>Monthly Breakdown</h1>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginRight: 'auto', background: 'var(--surface-2)', padding: '4px 12px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>All-in Mode</span>
+          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: 34, height: 20 }}>
+            <input type="checkbox" checked={includeClosingCosts} onChange={e => setIncludeClosingCosts(e.target.checked)} 
+              style={{ opacity: 0, width: 0, height: 0 }} />
+            <span className="slider" style={{ 
+              position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, 
+              backgroundColor: includeClosingCosts ? 'var(--purple)' : '#ccc', transition: '.2s', borderRadius: 20 
+            }}>
+              <span style={{ 
+                position: 'absolute', content: '""', height: 14, width: 14, left: includeClosingCosts ? 17 : 3, bottom: 3, 
+                backgroundColor: 'white', transition: '.2s', borderRadius: '50%' 
+              }} />
+            </span>
+          </label>
+          <span style={{ fontSize: '0.7rem', color: includeClosingCosts ? 'var(--text)' : 'var(--text-muted)' }}>Include Closing Costs</span>
+        </div>
+
         <div className="toggle-group">
           <button className={`toggle-btn${viewMode === 'chart'  ? ' active' : ''}`} onClick={() => switchView('chart')}>📊 Chart</button>
           <button className={`toggle-btn${viewMode === 'table' ? ' active' : ''}`} onClick={() => switchView('table')}>🧮 Summary</button>
@@ -103,12 +151,12 @@ export default function MonthlyBreakdown() {
                   >
                     <td style={{ fontWeight: 600 }}>{formatMonth(row.month)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.income)}</td>
-                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.expenses)}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.display_expenses)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--orange)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.maintenance + row.management_fee)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--teal)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.principal_paid)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--text-subtle)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.interest_paid)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: row.net_cash_flow < 0 ? 'var(--red)' : 'var(--text)', fontFamily: 'var(--font-mono)' }}>
-                      {formatCurrency(row.net_cash_flow)}
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: row.display_net < 0 ? 'var(--red)' : 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+                      {formatCurrency(row.display_net)}
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--purple)', fontFamily: 'var(--font-mono)' }}>
                       {formatCurrency(row.cumulative_cf)}
@@ -141,10 +189,50 @@ export default function MonthlyBreakdown() {
               <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-end' }} onClick={() => {
                 setFilters({})
                 setSearchParams({}, { replace: true })
-              }}>Clear filters</button>
+              }}>Clear all</button>
             )}
           </div>
-          <TransactionTable transactions={transactions} isLoading={txLoading} />
+
+          {/* Active Filter Chips */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, padding: '0 4px' }}>
+            {!includeClosingCosts && (
+              <div className="badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 16, background: 'rgba(147, 51, 234, 0.1)', border: '1px solid var(--purple)', color: 'var(--purple)', fontSize: '0.8125rem' }}>
+                <span style={{ fontWeight: 600 }}>Operational View</span>
+                <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Excl. Principal & Acquisition)</span>
+                <button 
+                  onClick={() => setIncludeClosingCosts(true)} 
+                  title="Show all costs (All-in Mode)"
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0 2px', display: 'flex', alignItems: 'center', color: 'var(--purple)', fontWeight: 800 }}>✕</button>
+              </div>
+            )}
+
+            {hasFilters && (
+              <>
+                {filters.month && (
+                  <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Month:</span>
+                    <span style={{ fontWeight: 600 }}>{formatMonth(filters.month)}</span>
+                    <button onClick={() => setFilters(f => ({ ...f, month: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
+                  </div>
+                )}
+                {filters.tag_name && (
+                  <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Tag:</span>
+                    <span style={{ fontWeight: 600 }}>{filters.tag_name}</span>
+                    <button onClick={() => setFilters(f => ({ ...f, tag_name: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
+                  </div>
+                )}
+                {filters.search && (
+                  <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Search:</span>
+                    <span style={{ fontWeight: 600 }}>"{filters.search}"</span>
+                    <button onClick={() => setFilters(f => ({ ...f, search: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <TransactionTable transactions={displayTransactions} isLoading={txLoading} />
         </div>
       )}
     </main>

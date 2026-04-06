@@ -148,9 +148,9 @@ create or replace view public.v_monthly_summary as
 select
   t.property_id,
   date_trunc('month', t.date)::date                                   as month,
-  coalesce(sum(case when t.amount > 0 and t.tag_name != 'Down Payment' then t.amount else 0 end), 0) as income,
+  coalesce(sum(case when t.amount > 0 and t.tag_name not in ('Down Payment', 'Closing Costs') then t.amount else 0 end), 0) as income,
   coalesce(sum(case
-    when t.tag_name = 'Down Payment' then 0
+    when t.tag_name in ('Down Payment', 'Closing Costs') then 0
     when t.breakdown is not null then
       -(select coalesce(sum((b->>'amount')::numeric), 0)
         from jsonb_array_elements(t.breakdown) b
@@ -159,7 +159,7 @@ select
     else 0
   end), 0)                                                            as expenses,
   coalesce(sum(case
-    when t.tag_name = 'Down Payment' then 0
+    when t.tag_name in ('Down Payment', 'Closing Costs') then 0
     when t.breakdown is not null then
       -(select coalesce(sum((b->>'amount')::numeric), 0)
         from jsonb_array_elements(t.breakdown) b
@@ -179,7 +179,8 @@ select
     else 0
   end), 0)                                                            as interest_paid,
   coalesce(sum(case when t.tag_name = 'Maintenance' then abs(t.amount) else 0 end), 0) as maintenance,
-  coalesce(sum(case when t.tag_name = 'Management Fee' then abs(t.amount) else 0 end), 0) as management_fee
+  coalesce(sum(case when t.tag_name = 'Management Fee' then abs(t.amount) else 0 end), 0) as management_fee,
+  coalesce(sum(case when t.tag_name = 'Closing Costs' then abs(t.amount) else 0 end), 0) as closing_costs
 from public.transactions t
 group by t.property_id, date_trunc('month', t.date);
 

@@ -116,6 +116,7 @@ export interface MonthlySummary {
   interest_paid: number
   maintenance: number
   management_fee: number
+  closing_costs: number
 }
 
 export interface TransactionFilters {

@@ -97,9 +97,32 @@ export default function Overview() {
 
   const activitySummary = useMemo(() => {
     return activityTxns.reduce((acc, tx) => {
-      if (tx.amount > 0) acc.income += tx.amount
-      else acc.expenses += Math.abs(tx.amount)
-      acc.cashflow += tx.amount
+      // 🚨 Operational Cash Flow logic (matches v_monthly_summary and computeInvestmentIntelligence)
+      // Exclude Down Payment and Closing Costs from operational P&L
+      if (tx.tag_name === 'Down Payment' || tx.tag_name === 'Closing Costs') return acc
+
+      let effectiveAmount = tx.amount
+      
+      // For mortgage payments with breakdown, only count Interest and Escrow as expenses
+      // Principal is an investment in equity, not an operational loss.
+      if (tx.breakdown) {
+        try {
+          const b = Array.isArray(tx.breakdown) ? tx.breakdown : typeof tx.breakdown === 'string' ? JSON.parse(tx.breakdown) : []
+          const intEsc = b
+            .filter((item: any) => item.label === 'Interest' || item.label === 'Escrow')
+            .reduce((s: number, item: any) => s + (item.amount || 0), 0)
+          
+          if (tx.amount < 0) {
+            effectiveAmount = -intEsc
+          }
+        } catch (e) {
+          console.error("Error parsing breakdown for summary", e)
+        }
+      }
+
+      if (effectiveAmount > 0) acc.income += effectiveAmount
+      else acc.expenses += Math.abs(effectiveAmount)
+      acc.cashflow += effectiveAmount
       return acc
     }, { income: 0, expenses: 0, cashflow: 0 })
   }, [activityTxns])
