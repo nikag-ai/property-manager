@@ -28,7 +28,7 @@ function MetricTile({ label, value, sub, color, tooltip, linkTo }: {
 }
 
 type Health = 'healthy' | 'warning' | 'critical' | 'info' | 'unknown'
-type Category = 'Returns' | 'Efficiency' | 'Risk' | 'Wealth'
+type Category = 'Returns' | 'Efficiency' | 'Risk' | 'Wealth' | 'Projections' | 'Stress Tests'
 
 interface MetricConfig {
   key: string
@@ -65,7 +65,7 @@ export default function IntelligenceHub() {
     const list: MetricConfig[] = []
 
     // 1. Returns & Yields
-    const tar = calc.totalAnnualizedReturn
+    const tar = calc.wealthCompVelocity
     list.push({
       key: 'tar', label: "Total Annualized Return", value: tar != null ? formatPct(tar) : '—',
       sub: "Combined IRR from all vectors", tooltip: "Sum of Cash Flow + Principal + Appreciation divided by total deployed.",
@@ -101,16 +101,57 @@ export default function IntelligenceHub() {
       linkTo: "/intelligence/yoc"
     })
 
-    const em = calc.equityMultiple
+    // 2. Projections (EXPERT)
+    const pcf = calc.projAnnualCF
     list.push({
-      key: 'em', label: "Equity Multiple", value: em != null ? `${em.toFixed(2)}×` : '—',
-      sub: "Total capital growth factor", tooltip: "(Net equity + cash deployed) ÷ cash deployed.",
-      color: "var(--purple)", category: 'Returns', performanceScore: em != null ? (em >= 1.5 ? 3 : em >= 1.2 ? 2 : 1) : 0,
-      health: em != null ? (em >= 1.5 ? 'healthy' : em >= 1.2 ? 'warning' : 'critical') : 'unknown',
-      linkTo: "/intelligence/equity-multiple"
+      key: 'pcf', label: "Exp. Annual Cash Flow", value: pcf != null ? formatCurrency(pcf) : '—',
+      sub: "TTM Run-rate projection", tooltip: "Forward-looking 12-month projection based on current active rent and precise fixed costs.",
+      color: "var(--green)", category: 'Projections', performanceScore: pcf != null ? (pcf > 0 ? 3 : 1) : 0,
+      health: pcf != null ? (pcf > 0 ? 'healthy' : 'critical') : 'unknown',
+      linkTo: "/intelligence/proj-cf"
     })
 
-    // 2. Efficiency & Operations
+    const refi = calc.refiEquity
+    list.push({
+      key: 'refi', label: "Refinance-able Equity", value: refi != null ? formatCurrency(refi) : '—',
+      sub: "Available liquidity at 75% LTV", tooltip: "How much cash could be extracted in a standard 75% LTV cash-out refinance.",
+      color: "var(--blue)", category: 'Projections', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/refi-equity"
+    })
+
+    const constnt = calc.loanConstant
+    list.push({
+      key: 'loanConstant', label: "Loan Constant", value: constnt != null ? formatPct(constnt) : '—',
+      sub: "True annual cost of debt", tooltip: "Total annual debt service divided by the total loan amount.",
+      color: "var(--indigo)", category: 'Projections', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/loan-constant"
+    })
+
+    const eacc = calc.equityAccRate
+    list.push({
+      key: 'equityAcc', label: "Equity Accumulation Rate", value: eacc != null ? formatPct(eacc) : '—',
+      sub: "Wealth speed (Paydown + Growth)", tooltip: "Annual amortization plus annual appreciation divided by original deployed capital.",
+      color: "var(--purple)", category: 'Projections', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/equity-acc"
+    })
+
+    const uy = calc.unleveredYield
+    list.push({
+      key: 'unleveredYield', label: "Unlevered Yield", value: uy != null ? formatPct(uy) : '—',
+      sub: "Total asset yield (100% Cash)", tooltip: "NOI divided by total acquisition costs, assuming no debt.",
+      color: "var(--teal)", category: 'Projections', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/unlevered-yield"
+    })
+
+    const yote = calc.yote
+    list.push({
+      key: 'yote', label: "Yield on Trapped Equity", value: yote != null ? formatPct(yote) : '—',
+      sub: "ROI on current net equity", tooltip: "Annual cash flow divided by current net equity. A key metric for 'Sell or Hold' decisions.",
+      color: "var(--orange)", category: 'Projections', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/yote"
+    })
+
+    // 3. Efficiency & Operations
     const cap = calc.capRate
     list.push({
       key: 'cap', label: "Cap Rate (Market)", value: cap != null ? formatPct(cap) : '—',
@@ -138,25 +179,75 @@ export default function IntelligenceHub() {
       linkTo: "/intelligence/oer"
     })
 
-    const intens = calc.expenseIntensity
+    const eb = calc.opEffBenchmark
     list.push({
-      key: 'intensity', label: "Expense Intensity", value: intens != null ? formatPct(intens) : '—',
-      sub: "Mgmt/Maintenance % of Revenue", tooltip: "Combined maintenance and management costs relative to revenue.",
-      color: "var(--orange)", category: 'Efficiency', performanceScore: intens != null ? (intens <= 15 ? 3 : intens <= 25 ? 2 : 1) : 0,
-      health: intens != null ? (intens <= 15 ? 'healthy' : intens <= 25 ? 'warning' : 'critical') : 'unknown',
-      linkTo: "/intelligence/intensity"
+      key: 'opEffBenchmark', label: "Op. Efficiency Benchmark", value: eb != null ? `${eb.toFixed(2)}x` : '—',
+      sub: "Actual OER vs 35% Target", tooltip: "Your current operating expense ratio relative to the institutional benchmark of 35%.",
+      color: "var(--orange)", category: 'Efficiency', performanceScore: eb != null ? (eb <= 1.2 ? 3 : eb <= 1.5 ? 2 : 1) : 0,
+      health: eb != null ? (eb <= 1.2 ? 'healthy' : eb <= 1.5 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/op-efficiency"
     })
 
-    const adjCap = calc.adjustedCapRate
+    // 4. Stress Tests
+    const rst = calc.rateStressTest
     list.push({
-      key: 'adjCap', label: "Adjusted Cap Rate", value: adjCap != null ? formatPct(adjCap) : '—',
-      sub: "NOI including 5% CapEx reserve", tooltip: "More realistic Cap Rate that accounts for long-term physical asset needs.",
-      color: "var(--indigo)", category: 'Efficiency', performanceScore: adjCap != null ? (adjCap >= 5.0 ? 3 : adjCap >= 3.5 ? 2 : 1) : 0,
-      health: adjCap != null ? (adjCap >= 5.0 ? 'healthy' : adjCap >= 3.5 ? 'warning' : 'critical') : 'unknown',
-      linkTo: "/intelligence/adjusted-cap"
+      key: 'rateStress', label: "Interest Rate Stress Test", value: rst != null ? formatPct(rst) : '—',
+      sub: "Max rate before $0 CF", tooltip: "The theoretical interest rate on your current loan balance that would reduce your cash flow to exactly zero.",
+      color: "var(--red)", category: 'Stress Tests', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/rate-stress"
     })
 
-    // 3. Risk & Leverage
+    const mac = calc.maintAbsorpCap
+    list.push({
+      key: 'maintAbsorp', label: "Maint. Absorption Cap", value: formatCurrency(mac),
+      sub: "Safe annual maintenance pad", tooltip: "Maximum amount of additional annual maintenance expense the property can absorb before becoming cash flow negative.",
+      color: "var(--orange)", category: 'Stress Tests', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/maint-absorp"
+    })
+
+    const ler = calc.levEffectRatio
+    list.push({
+      key: 'levEffect', label: "Leverage Effect Ratio", value: ler != null ? ler.toFixed(2) : '—',
+      sub: "Debt impact factor (ROE/Cap)", tooltip: "Compares your ROE to your Cap Rate. A ratio > 1 means leverage is positively amplifying your returns.",
+      color: "var(--indigo)", category: 'Stress Tests', performanceScore: ler != null ? (ler > 1 ? 3 : 1) : 0,
+      health: ler != null ? (ler > 1 ? 'healthy' : 'critical') : 'unknown',
+      linkTo: "/intelligence/lev-effect"
+    })
+
+    const ae = calc.amortEff
+    list.push({
+      key: 'amortEff', label: "Amortization Efficiency", value: ae != null ? formatPct(ae) : '—',
+      sub: "% of mortgage that is profit", tooltip: "Percentage of each mortgage payment that goes toward principal paydown (equity profit) vs interest expense.",
+      color: "var(--green)", category: 'Stress Tests', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/amort-efficiency"
+    })
+
+    const mvg = calc.marketValGap
+    list.push({
+      key: 'marketValGap', label: "Implied Market Value Gap", value: mvg != null ? formatCurrency(mvg) : '—',
+      sub: "Current Value vs 6.5% Cap", tooltip: "Difference between your estimated value and value based on NOI at a benchmark 6.5% Market Cap rate.",
+      color: "var(--blue)", category: 'Stress Tests', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/value-gap"
+    })
+
+    const vsd = calc.vacSurvivalDuration
+    list.push({
+      key: 'vacSurvival', label: "Vacancy Survival Duration", value: vsd != null ? `${vsd.toFixed(1)} mos` : '—',
+      sub: "Months till out of pocket", tooltip: "How many months of total vacancy the property can survive (using NOI + 3mo reserve) before requiring personal cash injections.",
+      color: "var(--pink)", category: 'Stress Tests', performanceScore: vsd != null ? (vsd >= 6 ? 3 : vsd >= 3 ? 2 : 1) : 0,
+      health: vsd != null ? (vsd >= 6 ? 'healthy' : vsd >= 3 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/vac-survival"
+    })
+
+    const tsi = calc.taxSensIndex
+    list.push({
+      key: 'taxSens', label: "Tax Sensitivity Index", value: tsi != null ? `${tsi.toFixed(1)}%` : '—',
+      sub: "ROI hit per 10% tax hike", tooltip: "How much your cash flow would drop if fixed costs (taxes/insurance) spiked by 10%.",
+      color: "var(--red)", category: 'Stress Tests', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/tax-sensitivity"
+    })
+
+    // 5. Risk & Leverage (Legacy cleanup)
     const dscr = calc.dscr
     list.push({
       key: 'dscr', label: "DSCR", value: dscr != null ? dscr.toFixed(2) : '—',
@@ -175,56 +266,13 @@ export default function IntelligenceHub() {
       linkTo: "/intelligence/ltv"
     })
 
-    const dy = calc.debtYield
-    list.push({
-      key: 'debtYield', label: "Debt Yield", value: dy != null ? formatPct(dy) : '—',
-      sub: "Income coverage of total loan", tooltip: "NOI ÷ Loan Amount. Measures risk regardless of interest rates.",
-      color: "var(--teal)", category: 'Risk', performanceScore: dy != null ? (dy >= 10 ? 3 : dy >= 8 ? 2 : 1) : 0,
-      health: dy != null ? (dy >= 10 ? 'healthy' : dy >= 8 ? 'warning' : 'critical') : 'unknown',
-      linkTo: "/intelligence/debt-yield"
-    })
-
-    const beoc = calc.breakEvenOccupancy
-    list.push({
-      key: 'ber', label: "Break-Even Occupancy", value: beoc != null ? formatPct(beoc) : '—',
-      sub: "Safety floor for vacancy", tooltip: "Percentage of year needed to be rented just to cover all costs.",
-      color: "var(--pink)", category: 'Risk', performanceScore: beoc != null ? (beoc <= 75 ? 3 : beoc <= 85 ? 2 : 1) : 0,
-      health: beoc != null ? (beoc <= 75 ? 'healthy' : beoc <= 85 ? 'warning' : 'critical') : 'unknown',
-      linkTo: "/intelligence/ber"
-    })
-
-    const sens = calc.interestSensitivity
-    list.push({
-      key: 'sensitivity', label: "Interest Sensitivity", value: sens != null ? `${sens.toFixed(1)}%` : '—',
-      sub: "CF delta per 1% rate shift", tooltip: "How much your cash flow changes if interest rates move by 1 percentage point.",
-      color: "var(--red)", category: 'Risk', performanceScore: sens != null ? (sens <= 30 ? 3 : sens <= 60 ? 2 : 1) : 0,
-      health: sens != null ? (sens <= 30 ? 'healthy' : sens <= 60 ? 'warning' : 'critical') : 'unknown',
-      linkTo: "/intelligence/sensitivity"
-    })
-
-    // 4. Wealth & Context
-    const capture = calc.equityCapture
-    list.push({
-      key: 'capture', label: "Equity Capture", value: capture != null ? formatPct(capture) : '—',
-      sub: "Unrealized gain on basis", tooltip: "Percentage growth in property value above your total acquisition basis.",
-      color: "var(--purple)", category: 'Wealth', performanceScore: 0, health: 'info',
-      linkTo: "/intelligence/capture"
-    })
-
+    // 6. Wealth & Context
     const shield = calc.taxShieldImpact
     list.push({
       key: 'shield', label: "Tax Shield Impact", value: shield != null ? formatPct(shield) : '—',
       sub: "% of income shielded by depreciation", tooltip: "Heuristic based on legal depreciation limits over a 27.5-year span.",
       color: "var(--indigo)", category: 'Wealth', performanceScore: 0, health: 'info',
       linkTo: "/intelligence/tax-shield"
-    })
-
-    const ipr = calc.interestRatio
-    list.push({
-      key: 'ipr', label: "Interest:Principal Ratio", value: ipr != null ? `${ipr.toFixed(1)}:1` : '—',
-      sub: "Bank share vs Equity share", tooltip: "How much interest is paid for every dollar of principal amortization.",
-      color: "var(--orange)", category: 'Wealth', performanceScore: 0, health: 'info',
-      linkTo: "/intelligence/interest-ratio"
     })
 
     const tcd = calc.totalDeployed
@@ -240,7 +288,7 @@ export default function IntelligenceHub() {
 
   if (!prop || !calc) return <div className="empty-state" style={{ marginTop: 80 }}><p>Loading...</p></div>
 
-  const categories: Category[] = ['Returns', 'Efficiency', 'Risk', 'Wealth']
+  const categories: Category[] = ['Returns', 'Projections', 'Efficiency', 'Risk', 'Stress Tests', 'Wealth']
 
   return (
     <main className="page-content">

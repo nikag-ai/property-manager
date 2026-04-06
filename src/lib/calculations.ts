@@ -113,10 +113,30 @@ export function computeInvestmentIntelligence(
     yoc: (prop.purchase_price + prop.closing_costs) > 0 ? (noi / (prop.purchase_price + prop.closing_costs)) * 100 : null,
     equityCapture: (prop.purchase_price + prop.closing_costs) > 0 ? ((propertyValue - (prop.purchase_price + prop.closing_costs)) / (prop.purchase_price + prop.closing_costs)) * 100 : null,
     adjustedCapRate: propertyValue > 0 ? ((noi - (annualRent * 0.05)) / propertyValue) * 100 : null,
-    taxShieldImpact: noi > 0 ? (((prop.purchase_price * 0.8) / 27.5) / noi) * 100 : null,
-    wealthVelocity: totalAnnualizedReturn, // Already calculates combined yield
     economicVacancy: metrics?.vacancy_rate_pct ?? 0,
     interestSensitivity: annualCF != null && annualCF !== 0 ? (Math.abs(prop.loan_amount * 0.01) / Math.abs(annualCF)) * 100 : null,
+    // --- EXPERT METRICS ---
+    projAnnualCF: (annualRent - annualOpExp - annualDebtService),
+    refiEquity: propertyValue > 0 ? Math.max(0, (propertyValue * 0.75) - (metrics?.remaining_loan_balance ?? prop.loan_amount)) : 0,
+    loanConstant: prop.loan_amount > 0 ? (annualDebtService / prop.loan_amount) * 100 : null,
+    equityAccRate: totalDeployed > 0 ? ((annualPrincipal + annualAppreciation) / totalDeployed) * 100 : null,
+    unleveredYield: (prop.purchase_price + prop.closing_costs) > 0 ? (noi / (prop.purchase_price + prop.closing_costs)) * 100 : null,
+    yote: (capitalizedNetEq != null && capitalizedNetEq > 0 && annualCF != null) ? (annualCF / capitalizedNetEq) * 100 : null,
+    wealthCompVelocity: totalAnnualizedReturn,
+    rateStressTest: (metrics?.remaining_loan_balance ?? prop.loan_amount) > 0 ? (noi / (metrics?.remaining_loan_balance ?? prop.loan_amount)) * 100 : null,
+    maintAbsorpCap: annualCF ?? 0,
+    levEffectRatio: (roe != null && capRate != null && capRate > 0) ? (roe / capRate) : null,
+    amortEff: annualDebtService > 0 ? (annualPrincipal / annualDebtService) * 100 : null,
+    marketValGap: propertyValue > 0 ? (propertyValue - (noi / 0.065)) : null,
+    monthlyOutflow: (annualOpExp + annualDebtService) / 12,
+    vacSurvivalDuration: (annualOpExp + annualDebtService) > 0 ? (Math.max(0, metrics?.cumulative_cash_flow ?? 0) / ((annualOpExp + annualDebtService) / 12)) : 0,
+    vacTarget12Mo: ((annualOpExp + annualDebtService) / 12) * 12,
+    opEffBenchmark: oer != null ? (oer / 35.0) : null,
+    taxSensIndex: annualCF != null && annualCF !== 0 ? (((prop.hoa_amount ?? 0) * 0.10) / annualCF) * 100 : null,
+    // --- UPDATED TAX SHIELD ---
+    taxShieldImpact: annualRent > 0 ? ((((prop.purchase_price * 0.8) / 27.5) + (metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) * 12 : 0) + annualOpExp) / annualRent) * 100 : null,
+    annualInterest: metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) * 12 : 0,
+    annualDepreciation: (prop.purchase_price * 0.8) / 27.5,
   }
 }
 

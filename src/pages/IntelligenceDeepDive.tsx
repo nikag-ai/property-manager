@@ -26,9 +26,9 @@ export default function IntelligenceDeepDive() {
           value: metrics?.gross_equity != null ? formatCurrency(metrics.gross_equity) : '—',
           color: 'var(--blue)',
           formula: 'Current Market Value - Remaining Loan Balance = Gross Equity',
-          math: `${formatCurrency(metrics?.current_value ?? prop.purchase_price)} - ${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)} = ${formatCurrency(metrics?.gross_equity ?? 0)}`,
+          math: `${formatCurrency(prop.current_value ?? prop.purchase_price)} - ${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)} = ${formatCurrency(metrics?.gross_equity ?? 0)}`,
           mathBreakdown: [
-            `Current Value (${formatCurrency(metrics?.current_value ?? prop.purchase_price)}): The latest appraised or market value of the property.`,
+            `Current Value (${formatCurrency(prop.current_value ?? prop.purchase_price)}): The latest appraised or market value of the property.`,
             `Remaining Loan Balance (${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)}): Your current mortgage principal balance. As you pay your mortgage, this number goes down, increasing your equity.`
           ],
           meaning: "Gross Equity is the simplest measure of your wealth in a property. It represents the difference between what the house is worth and what you owe the bank. It does not account for the costs of selling or the cumulative cash you've spent on the property.",
@@ -54,27 +54,6 @@ export default function IntelligenceDeepDive() {
           benchmarks: [
             { label: 'Break-Even Point', value: '$0' },
             { label: 'Target Cash-on-Cash', value: '2x Invested Capital' },
-          ]
-        }
-      case 'tar':
-      case 'total-return':
-        return {
-          title: 'Total Annualized Return',
-          value: calc.totalAnnualizedReturn != null ? formatPct(calc.totalAnnualizedReturn) : '—',
-          color: 'var(--purple)',
-          formula: '(Annual Cash Flow + Annual Principal Paydown + Annual Appreciation) ÷ Total Cash Deployed',
-          math: `(${formatCurrency(calc.annualCF ?? 0)} + ${formatCurrency(calc.annualPrincipal ?? 0)} + ${formatCurrency(calc.annualAppreciation ?? 0)}) ÷ ${formatCurrency(calc.totalDeployed)} = ${calc.totalAnnualizedReturn ? (calc.totalAnnualizedReturn/100).toFixed(4) : '—'}`,
-          mathBreakdown: [
-            `Annualized Cash Flow (${formatCurrency(calc.annualCF ?? 0)}): Pure operational profit taking into account all expenses and debt service.`,
-            `Annual Principal Paydown (${formatCurrency(calc.annualPrincipal ?? 0)}): The amount of the mortgage loan that the tenant paid down for you this year.`,
-            `Annual Appreciation (${formatCurrency(calc.annualAppreciation ?? 0)}): The estimated growth in property value annualized over the hold period.`,
-            `Total Cash Deployed (${formatCurrency(calc.totalDeployed)}): The denominator. Down payment + closing costs.`
-          ],
-          meaning: "Total Annualized Return acts like a simplified IRR (Internal Rate of Return). It takes all three major wealth generation distinct vectors of real estate—cash flow, mortgage paydown, and equity appreciation—and aggregates them into one powerful percentage. This lets you compare your entire real estate engine directly against the S&P 500 or bond yields.",
-          benchmarks: [
-            { label: 'S&P 500 Average', value: '7.0% – 10.0%' },
-            { label: 'Healthy Real Estate Total Return', value: '12.0% – 18.0%' },
-            { label: 'Exceptional Performers', value: '20.0%+' },
           ]
         }
       case 'coc':
@@ -186,24 +165,6 @@ export default function IntelligenceDeepDive() {
             { label: 'Very Heavy (High Taxes / Luxury HOA)', value: '55%+' },
           ]
         }
-      case 'intensity':
-        return {
-          title: 'Expense Intensity',
-          value: calc.expenseIntensity != null ? formatPct(calc.expenseIntensity) : '—',
-          color: 'var(--orange)',
-          formula: '(Management + Maintenance Costs) ÷ Gross Revenue = Intensity',
-          math: `${formatCurrency(calc.mgmtTTM + (metrics?.maintenance_pct_ttm ?? 0) * calc.annualRent / 100)} ÷ ${formatCurrency(calc.annualRent)} = ${calc.expenseIntensity ? (calc.expenseIntensity/100).toFixed(4) : '—'}`,
-          mathBreakdown: [
-            `Active Costs (${formatCurrency(calc.mgmtTTM + (metrics?.maintenance_pct_ttm ?? 0) * calc.annualRent / 100)}): The sum of Management Fees (${formatCurrency(calc.mgmtTTM)}) and estimated Maintenance/Repairs. These represent the "high-effort" expenses of property ownership.`,
-            `Gross Revenue (${formatCurrency(calc.annualRent)}): Total potential annual rental income.`
-          ],
-          meaning: "Expense Intensity isolates the 'active' costs of running a property (management and maintenance) from the 'passive' costs (taxes, insurance, HOA). A high intensity score suggests the property is difficult to manage or physically deteriorating, which can eat up your time as well as your money.",
-          benchmarks: [
-            { label: 'Efficient / High Quality', value: 'Below 15%' },
-            { label: 'Standard Managed Property', value: '15% – 22%' },
-            { label: 'Distressed / Intensive', value: 'Above 25%' },
-          ]
-        }
       case 'adjCap':
       case 'adjusted-cap':
         return {
@@ -222,6 +183,292 @@ export default function IntelligenceDeepDive() {
             { label: 'Conservative Healthy Core', value: '4.5% – 6.0%' },
             { label: 'Marginal Performance', value: '3.0% – 4.5%' },
             { label: 'Value Traps', value: 'Below 2.5%' },
+          ]
+        }
+      case 'pcf':
+      case 'proj-cf':
+        return {
+          title: 'Exp. Annual Cash Flow (Run-Rate)',
+          value: calc.projAnnualCF != null ? formatCurrency(calc.projAnnualCF) : '—',
+          color: 'var(--green)',
+          formula: 'Annual Rent - Annual Operating Expenses - Annual Debt Service = Projected Cash Flow',
+          math: `${formatCurrency(calc.annualRent)} - ${formatCurrency(calc.annualOpExp)} - ${formatCurrency(calc.annualDebtService)} = ${calc.projAnnualCF != null ? formatCurrency(calc.projAnnualCF) : '—'}`,
+          mathBreakdown: [
+            `Annual Rent (${formatCurrency(calc.annualRent)}): Your current monthly rent multiplied by 12. Unlike historical data, this assumes the latest lease rate continues for a full year.`,
+            `Annual Operating Expenses (${formatCurrency(calc.annualOpExp)}): Includes TTM management/maintenance plus annualized fixed costs like HOA, Taxes, and Insurance.`,
+            `Annual Debt Service (${formatCurrency(calc.annualDebtService)}): The total mortgage payments expected over the next 12 months.`
+          ],
+          meaning: "This is your forward-looking 'Run Rate'. While other metrics look at what *happened*, this metric looks at what *will happen* over the next 12 months if your current rent and expense levels stay constant. It's the most important number for personal budgeting and planning future acquisitions.",
+          benchmarks: [
+            { label: 'Positive Cash Flow', value: 'Any amount > $0' },
+            { label: 'Healthy Margin', value: '15% of Gross Rent' },
+            { label: 'Self-Sustaining Portfolio', value: '$500+ / unit' },
+          ]
+        }
+      case 'refi':
+      case 'refi-equity':
+        return {
+          title: 'Refinance-able Equity (Dry Powder)',
+          value: calc.refiEquity != null ? formatCurrency(calc.refiEquity) : '—',
+          color: 'var(--blue)',
+          formula: '(Current Market Value × 75%) - Remaining Loan Balance = Available Liquidity',
+          math: `(${formatCurrency(prop.current_value ?? prop.purchase_price)} × 0.75) - ${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)} = ${calc.refiEquity != null ? formatCurrency(calc.refiEquity) : '—'}`,
+          mathBreakdown: [
+            `Max Refinance Loan (${formatCurrency((prop.current_value ?? prop.purchase_price) * 0.75)}): Most conventional lenders will allow a cash-out refinance at a maximum 75% Loan-to-Value (LTV).`,
+            `Remaining Loan Balance (${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)}): Your current principal balance that must be paid off by the new loan.`
+          ],
+          meaning: "Refinance-able equity is your hidden 'Dry Powder'. It represents the actual liquid cash you could pull out of this property tomorrow to buy another one, while still keeping a safe 25% equity cushion. If this number is high, you are under-leveraged and your wealth compounding is likely slowing down.",
+          benchmarks: [
+            { label: 'Re-investment Ready', value: '$50,000+' },
+            { label: 'Down Payment Coverage', value: 'Enough for 1+ new unit' },
+          ]
+        }
+      case 'loanConstant':
+      case 'loan-constant':
+        return {
+          title: 'Loan Constant',
+          value: calc.loanConstant != null ? formatPct(calc.loanConstant) : '—',
+          color: 'var(--indigo)',
+          formula: 'Annual Debt Service ÷ Total Loan Amount = Loan Constant',
+          math: `${formatCurrency(calc.annualDebtService)} ÷ ${formatCurrency(prop.loan_amount)} = ${calc.loanConstant ? (calc.loanConstant/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Annual Debt Service (${formatCurrency(calc.annualDebtService)}): Principal + Interest + Escrow paid over 12 months.`,
+            `Total Loan Amount (${formatCurrency(prop.loan_amount)}): The initial amount borrowed from the lender.`
+          ],
+          meaning: "The Loan Constant measures the true 'percentage cost' of your debt. Think of it as a weighted average of your interest rate and your amortization speed. If your Loan Constant is HIGHER than your Cap Rate, you have 'Negative Leverage'—meaning the money you borrowed is actually costing you more than the property is earning.",
+          benchmarks: [
+            { label: 'Cheap Capital', value: 'Below 6.0%' },
+            { label: 'Balanced Leverage', value: '6.0% – 8.0%' },
+            { label: 'Expensive / High Rate', value: 'Above 8.5%' },
+          ]
+        }
+      case 'equityAcc':
+      case 'equity-acc':
+        return {
+          title: 'Equity Accumulation Rate',
+          value: calc.equityAccRate != null ? formatPct(calc.equityAccRate) : '—',
+          color: 'var(--purple)',
+          formula: '(Annual Principal Paydown + Annual Appreciation) ÷ Original Deployed Capital',
+          math: `(${formatCurrency(calc.annualPrincipal ?? 0)} + ${formatCurrency(calc.annualAppreciation ?? 0)}) ÷ ${formatCurrency(calc.totalDeployed)} = ${calc.equityAccRate ? (calc.equityAccRate/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Annual Principal (${formatCurrency(calc.annualPrincipal ?? 0)}): The amount of debt reduced by your tenant through their rent as they pay your mortgage.`,
+            `Annual Appreciation (${formatCurrency(calc.annualAppreciation ?? 0)}): The estimated market growth of the property value per year.`,
+            `Cash Deployed (${formatCurrency(calc.totalDeployed)}): Your initial down payment and closing costs.`
+          ],
+          meaning: "This is the 'Wealth Engine' of real estate. It ignores cash flow and focuses entirely on how fast your Net Worth is growing inside this specific asset. Even if a property is 'cash flow break-even', it might still be generating 15%+ yearly wealth through this accumulation rate.",
+          benchmarks: [
+            { label: 'Inflation Hedge', value: '3.0% – 6.0%' },
+            { label: 'Wealth Builder', value: '8.0% – 15.0%' },
+            { label: 'Aggressive Compounder', value: '20%+' },
+          ]
+        }
+      case 'unleveredYield':
+      case 'unlevered-yield':
+        return {
+          title: 'Unlevered Yield (Pure Asset)',
+          value: calc.unleveredYield != null ? formatPct(calc.unleveredYield) : '—',
+          color: 'var(--teal)',
+          formula: 'Annual NOI ÷ Total Acquisition Cost (Basis) = Unlevered Yield',
+          math: `${formatCurrency(calc.noi)} ÷ ${formatCurrency(prop.purchase_price + prop.closing_costs)} = ${calc.unleveredYield ? (calc.unleveredYield/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Net Operating Income (${formatCurrency(calc.noi)}): Your annual profit BEFORE all debt and taxes.`,
+            `Total Basis (${formatCurrency(prop.purchase_price + prop.closing_costs)}): The full price you paid (Purchase + Closing Costs).`
+          ],
+          meaning: "Unlevered yield tells you how the *house* is performing as a machine, regardless of your personal financing choices. It answers the question: 'If I paid 100% cash, what would my ROI be?' This is the best way to compare a rental property to other assets like Treasury Bills or Dividend Stocks.",
+          benchmarks: [
+            { label: 'Risk-Free Benchmark (T-Bill)', value: 'approx 4.5% – 5.5%' },
+            { label: 'Solid Core Rental', value: '6.0% – 8.0%' },
+            { label: 'High Yield Cash Play', value: '9.0%+' },
+          ]
+        }
+      case 'yote':
+        return {
+          title: 'Yield on Trapped Equity (YOTE)',
+          value: calc.yote != null ? formatPct(calc.yote) : '—',
+          color: 'var(--orange)',
+          formula: 'Annual Cash Flow ÷ Current Net Equity (Capitalized)',
+          math: `${formatCurrency(calc.annualCF ?? 0)} ÷ ${formatCurrency(calc.capitalizedNetEq ?? 0)} = ${calc.yote ? (calc.yote/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Annualized Cash Flow (${formatCurrency(calc.annualCF ?? 0)}): Your net pocketable profit after all expenses.`,
+            `Capitalized Net Equity (${formatCurrency(calc.capitalizedNetEq ?? 0)}): The actual cash you'd walk away with if you sold today (Value - Debt - 10% Selling Costs).`
+          ],
+          meaning: "Yield on Trapped Equity is the ultimate 'Expert Decision' metric. It measures the ROI you are getting on the equity currently *stuck* in the house. If your YOTE is very low (e.g. 2%), it means your equity is 'lazy'. You could likely sell this house, put that same cash into a simple savings account, and make more money without the work of being a landlord.",
+          benchmarks: [
+            { label: 'Efficient Equity', value: '8.0%+' },
+            { label: 'Lazying Equity (Consider Refi/Sell)', value: '3.0% – 5.0%' },
+            { label: 'Dead Equity', value: 'Below 2.5%' },
+          ]
+        }
+      case 'rateStress':
+      case 'rate-stress':
+        return {
+          title: 'Interest Rate Stress Test',
+          value: calc.rateStressTest != null ? formatPct(calc.rateStressTest) : '—',
+          color: 'var(--red)',
+          formula: 'NOI ÷ Remaining Loan Balance = Max Survivable Interest Rate',
+          math: `${formatCurrency(calc.noi)} ÷ ${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)} = ${calc.rateStressTest ? (calc.rateStressTest/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `NOI (${formatCurrency(calc.noi)}): Your annual Net Operating Income available to pay a mortgage.`,
+            `Current Principal Balance (${formatCurrency(metrics?.remaining_loan_balance ?? prop.loan_amount)}): Your active debt responsibility.`
+          ],
+          meaning: "This test calculates the 'Failure Point'. It identifies the theoretical maximum interest rate you could pay on your current loan balance before the property stops making any money at all. If the result is 12% and you currently have a 6% loan, you have a massive safety buffer. If it's 6.5%, you are extremely vulnerable to rate hikes on a future refinance.",
+          benchmarks: [
+            { label: 'Bulletproof Buffer', value: '10.0%+' },
+            { label: 'Safe Zone', value: '7.0% – 9.0%' },
+            { label: 'High Danger / Thin Margin', value: 'Below 6.0%' },
+          ]
+        }
+      case 'maintAbsorp':
+      case 'maint-absorp':
+        return {
+          title: 'Maintenance Absorption Capacity',
+          value: calc.maintAbsorpCap != null ? formatCurrency(calc.maintAbsorpCap) : '$0',
+          color: 'var(--orange)',
+          formula: 'Annual Cash Flow = Maximum Survivable Maintenance Spike',
+          math: `${formatCurrency(calc.annualCF ?? 0)} = ${formatCurrency(calc.maintAbsorpCap ?? 0)}`,
+          mathBreakdown: [
+            `Annualized Cash Flow (${formatCurrency(calc.annualCF ?? 0)}): Your current projected annual profit.`
+          ],
+          meaning: "This is a raw 'Stress Test'. It shows the exact dollar amount of additional *unexpected* maintenance expense the property can absorb in a single year before it starts costing you personal money out-of-pocket. It's an indicator of the asset's self-funding resilience during bad years (e.g. if the HVAC and the Roof both fail in July).",
+          benchmarks: [
+            { label: 'Immune to Routine Repairs', value: '$5,000+' },
+            { label: 'Major System Safe', value: '$2,500 – $5,000' },
+            { label: 'Fragile (One repair = Loss)', value: 'Below $1,000' },
+          ]
+        }
+      case 'levEffect':
+      case 'lev-effect':
+        return {
+          title: 'Leverage Effect Ratio',
+          value: calc.levEffectRatio != null ? calc.levEffectRatio.toFixed(2) : '—',
+          color: 'var(--indigo)',
+          formula: 'Return on Equity (ROE) ÷ Cap Rate',
+          math: `${calc.roe ? (calc.roe/100).toFixed(4) : '—'} ÷ ${calc.capRate ? (calc.capRate/100).toFixed(4) : '—'} = ${calc.levEffectRatio ? calc.levEffectRatio.toFixed(2) : '—'}`,
+          mathBreakdown: [
+            `ROE (${calc.roe ? formatPct(calc.roe) : '—'}): Your return on the equity you've actually built.`,
+            `Cap Rate (${calc.capRate ? formatPct(calc.capRate) : '—'}): The raw asset yield assuming no debt.`
+          ],
+          meaning: "The Leverage Effect Ratio tells you if your debt is actually helping you. If the ratio is GREATER THAN 1.0, your leverage is 'Positive'—meaning you are magnifying your returns through the bank's money. If it's BELOW 1.0, your debt is actually dragging down your ROE, and the property would be more efficient if owned entirely in cash.",
+          benchmarks: [
+            { label: 'Healthy Positive Leverage', value: '1.20x or higher' },
+            { label: 'Neutral Zone', value: '0.90x – 1.10x' },
+            { label: 'Destructive Leverage', value: 'Below 0.80x' },
+          ]
+        }
+      case 'amortEff':
+      case 'amort-efficiency':
+        return {
+          title: 'Amortization Efficiency',
+          value: calc.amortEff != null ? formatPct(calc.amortEff) : '—',
+          color: 'var(--green)',
+          formula: 'Monthly Principal Paydown ÷ Full Monthly Mortgage Payment',
+          math: `${formatCurrency(calc.annualPrincipal / 12)} ÷ ${formatCurrency(calc.annualDebtService / 12)} = ${calc.amortEff ? (calc.amortEff/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Monthly Principal Paydown (${formatCurrency(calc.annualPrincipal / 12)}): The 'hidden wealth'—actual debt reduction in a single month.`,
+            `Total Monthly Payment (${formatCurrency(calc.annualDebtService / 12)}): The full check you write (Principal + Interest + Taxes + Insurance).`
+          ],
+          meaning: "Amortization Efficiency measures how much of your mortgage check is actually 'profit' vs how much is 'expense' (interest and taxes). In early years of a 30-year mortgage, this number is painfully low (often 10%). As the loan matures, efficiency spikes, meaning your net worth grows faster every month simply by staying in the deal.",
+          benchmarks: [
+            { label: 'Early-Stage Loan (Years 1-5)', value: '10.0% – 15.0%' },
+            { label: 'Mid-Stage Loan (Years 10-15)', value: '25.0% – 35.0%' },
+            { label: 'Matured Equity King (Year 25+)', value: 'Above 50.0%' },
+          ]
+        }
+      case 'valueGap':
+      case 'value-gap':
+        return {
+          title: 'Implied Market Value Gap',
+          value: calc.marketValGap != null ? formatCurrency(calc.marketValGap) : '—',
+          color: 'var(--blue)',
+          formula: 'Current Estimated Value - (NOI ÷ 6.5% Benchmark Cap Rate)',
+          math: `${formatCurrency(prop.current_value ?? prop.purchase_price)} - (${formatCurrency(calc.noi)} ÷ 0.065) = ${calc.marketValGap != null ? formatCurrency(calc.marketValGap) : '—'}`,
+          mathBreakdown: [
+            `Our Valuation (${formatCurrency(prop.current_value ?? prop.purchase_price)}): The value we currently have on the books for this property.`,
+            `Institutional Valuation (${formatCurrency(calc.noi / 0.065)}): What an institutional buyer would pay based on its Income (NOI) at a standard 6.5% cap rate.`
+          ],
+          meaning: "The Value Gap tells you if you are overpaying for 'Sentiment' vs 'Income'. If the gap is positive (+$50,000), it means your property is priced as a 'Luxury' or 'Primary-User' home beyond its rental value. If negative (-$50,000), you have found a hidden gem that is worth more in income than its market price suggests.",
+          benchmarks: [
+            { label: 'Income-Pure Asset', value: 'Gap near $0' },
+            { label: 'Over-Valued (High Apprec.)', value: 'Large Positive Gap' },
+            { label: 'Under-Valued (Deep Value)', value: 'Significant Negative Gap' },
+          ]
+        }
+      case 'vac-survival':
+      case 'vacSurvival':
+        return {
+          title: 'Vacancy Survival Duration',
+          value: calc.vacSurvivalDuration != null ? `${calc.vacSurvivalDuration.toFixed(1)} months` : '—',
+          color: 'var(--pink)',
+          formula: 'Actual Cumulative Cash Flow ÷ (Monthly OpEx + Monthly Mortgage)',
+          math: `${formatCurrency(Math.max(0, metrics?.cumulative_cash_flow ?? 0))} ÷ ${formatCurrency(calc.monthlyOutflow ?? 0)} = ${calc.vacSurvivalDuration ? calc.vacSurvivalDuration.toFixed(1) : '—'} months`,
+          mathBreakdown: [
+            `Current Cash Reserves (${formatCurrency(Math.max(0, metrics?.cumulative_cash_flow ?? 0))}): Your actual accumulated profit (Cumulative P&L) since acquisition. We assume you haven't touched this cash and it's your primary safety net.`,
+            `Monthly Burn Rate (${formatCurrency(calc.monthlyOutflow ?? 0)}): The total monthly cost of holding the property (Mortgage + Taxes + Insurance + HOA + Maintenance) with $0 rental income.`
+          ],
+          meaning: `This metric calculates exactly how long you can survive a "Total Vacancy" event using only the profits this property has generated so far. It ignores theoretical savings and focuses on the asset's self-funding capability. To reach the gold standard of 12 months of survival, your reserve should be ${formatCurrency(calc.vacTarget12Mo ?? 0)}.`,
+          benchmarks: [
+            { label: 'Fortress Protection (12 mo)', value: formatCurrency(calc.vacTarget12Mo ?? 0) },
+            { label: 'Standard Safety (6 mo)', value: formatCurrency((calc.vacTarget12Mo ?? 0) / 2) },
+            { label: 'Minimum Buffer (3 mo)', value: formatCurrency((calc.vacTarget12Mo ?? 0) / 4) },
+          ]
+        }
+      case 'op-efficiency':
+      case 'opEffBenchmark':
+        return {
+          title: 'Op. Efficiency Benchmark',
+          value: calc.opEffBenchmark != null ? `${calc.opEffBenchmark.toFixed(2)}x` : '—',
+          color: 'var(--orange)',
+          formula: 'Your Operating Expense Ratio (OER) ÷ 35% Institutional Target',
+          math: `${calc.oer ? (calc.oer/100).toFixed(4) : '—'} ÷ 0.35 = ${calc.opEffBenchmark ? calc.opEffBenchmark.toFixed(2) : '—'}`,
+          mathBreakdown: [
+            `Your OER (${calc.oer ? formatPct(calc.oer) : '—'}): What percentage of your rent is currently lost to operational overhead (Taxes, HOA, Mgmt, Maint).`,
+            `Target Standard (35%): The institutional gold-standard for a highly efficient single-family rental.`
+          ],
+          meaning: "This ratio tells you how close you are to 'Institutional Perfection'. A score of 1.0 means you run a perfectly lean 35% OER. If your score is 2.0, you are twice as expensive to operate as the top pros—likely due to high property taxes or inefficient property management fees.",
+          benchmarks: [
+            { label: 'Institutional Grade', value: '0.80x – 1.10x' },
+            { label: 'Standard Professional', value: '1.20x – 1.40x' },
+            { label: 'Highly Inefficient', value: 'Above 1.60x' },
+          ]
+        }
+      case 'tax-sensitivity':
+      case 'taxSens':
+        return {
+          title: 'Tax Sensitivity Index',
+          value: calc.taxSensIndex != null ? `${calc.taxSensIndex.toFixed(1)}%` : '—',
+          color: 'var(--red)',
+          formula: '(10% Spike in Fixed Costs) ÷ Annual Cash Flow',
+          math: `(${formatCurrency((prop.hoa_amount ?? 0) * 0.10)}) ÷ ${formatCurrency(calc.annualCF ?? 0)} = ${calc.taxSensIndex ? (calc.taxSensIndex/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Simulated Spike (${formatCurrency((prop.hoa_amount ?? 0) * 12 * 0.10)}): We simulate a 10% annual increase in property taxes and insurance (using HOA/Fixed costs as a proxy).`,
+            `Your Annual Profit (${formatCurrency(calc.annualCF ?? 0)}): Your net bottom-line cash flow.`
+          ],
+          meaning: "This index measures how 'brittle' your profit is. It calculates what percentage of your bottom-line profit would be wiped out if property taxes or insurance spiked by just 10%. If this number is 100%, it means a simple tax hike would turn your property into a cash-flow-negative asset.",
+          benchmarks: [
+            { label: 'Hardened / High Margin', value: 'Below 5.0%' },
+            { label: 'Vulnerable', value: '15.0% – 30.0%' },
+            { label: 'Critical Risk', value: 'Above 50.0%' },
+          ]
+        }
+      case 'tax-shield':
+      case 'shield':
+        return {
+          title: 'Tax Shield Impact',
+          value: calc.taxShieldImpact != null ? formatPct(calc.taxShieldImpact) : '—',
+          color: 'var(--indigo)',
+          formula: '(Annual Depreciation + Annual Interest + Annual OpEx) ÷ Annual Gross Rent = Tax Shield',
+          math: `(${formatCurrency(calc.annualDepreciation)} + ${formatCurrency(calc.annualInterest)} + ${formatCurrency(calc.annualOpExp)}) ÷ ${formatCurrency(calc.annualRent)} = ${calc.taxShieldImpact ? (calc.taxShieldImpact/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Annual Depreciation (${formatCurrency(calc.annualDepreciation)}): Non-cash expense allowed by the IRS (27.5-year schedule).`,
+            `Annual Interest (${formatCurrency(calc.annualInterest)}): The portion of your mortgage payment that is fully tax-deductible as a business expense.`,
+            `Annual Operating Expenses (${formatCurrency(calc.annualOpExp)}): Includes Property Taxes, Insurance, HOA, Management, and Maintenance.`,
+            `Gross Rent (${formatCurrency(calc.annualRent)}): Your total top-line revenue before any deductions.`
+          ],
+          meaning: "The Tax Shield Impact measures what percentage of your gross rental income is effectively 'invisible' to the IRS. By combining depreciation (a paper loss) with actual deductible expenses like interest and taxes, real estate often allows investors to collect cash flow while reporting a taxable loss. A shield over 100% means the property is actively offsetting your other income.",
+          benchmarks: [
+            { label: 'Healthy Shield', value: '40% – 70%' },
+            { label: 'Tax-Free Income Zone', value: '80% – 100%' },
+            { label: 'Loss Harvesting Phase', value: 'Above 100%' },
           ]
         }
       case 'dscr':
@@ -264,7 +511,7 @@ export default function IntelligenceDeepDive() {
       case 'debt-yield':
         return {
           title: 'Debt Yield',
-          value: calc.debtYield != null ? formatPct(calc.debtYield) : '—',
+          value: calc.debtYield ?? 0,
           color: 'var(--teal)',
           formula: 'Annual NOI ÷ Loan Amount = Debt Yield',
           math: `${formatCurrency(calc.noi)} ÷ ${formatCurrency(prop.loan_amount)} = ${calc.debtYield ? (calc.debtYield/100).toFixed(4) : '—'}`,
@@ -334,99 +581,25 @@ export default function IntelligenceDeepDive() {
             { label: 'Grand Slam', value: '100%+' },
           ]
         }
-      case 'shield':
+      case 'total-return':
+      case 'tar':
         return {
-          title: 'Tax Shield Impact',
-          value: calc.taxShieldImpact != null ? formatPct(calc.taxShieldImpact) : '—',
-          color: 'var(--indigo)',
-          formula: 'Estimated Annual Depreciation ÷ Current NOI = Tax Shield',
-          math: `${formatCurrency((prop.purchase_price * 0.8) / 27.5)} ÷ ${formatCurrency(calc.noi)} = ${calc.taxShieldImpact ? (calc.taxShieldImpact/100).toFixed(4) : '—'}`,
+          title: 'Total Annualized Return',
+          value: calc.wealthCompVelocity != null ? formatPct(calc.wealthCompVelocity) : '—',
+          color: 'var(--purple)',
+          formula: '(Annual Cash Flow + Annual Principal Paydown + Annual Appreciation) ÷ Total Cash Deployed',
+          math: `(${formatCurrency(calc.annualCF ?? 0)} + ${formatCurrency(calc.annualPrincipal ?? 0)} + ${formatCurrency(calc.annualAppreciation ?? 0)}) ÷ ${formatCurrency(calc.totalDeployed)} = ${calc.wealthCompVelocity ? (calc.wealthCompVelocity/100).toFixed(4) : '—'}`,
           mathBreakdown: [
-            `Annual Depreciation (${formatCurrency((prop.purchase_price * 0.8) / 27.5)}): IRS allows writing off the building value (estimated as 80% of purchase) over 27.5 years. This is a non-cash expense that reduces your taxable income.`,
-            `Current NOI (${formatCurrency(calc.noi)}): Your annualized Net Operating Income.`
+            `Annualized Cash Flow (${formatCurrency(calc.annualCF ?? 0)}): Pure operational profit taking into account all expenses and debt service.`,
+            `Annual Principal Paydown (${formatCurrency(calc.annualPrincipal ?? 0)}): The amount of the mortgage loan that the tenant paid down for you this year.`,
+            `Annual Appreciation (${formatCurrency(calc.annualAppreciation ?? 0)}): The estimated growth in property value annualized over the hold period.`,
+            `Total Cash Deployed (${formatCurrency(calc.totalDeployed)}): The denominator. Down payment + closing costs.`
           ],
-          meaning: "The IRS allows you to write off a portion of your building's value as an 'expense' (depreciation) even if the building is actually appreciating. Tax Shield Impact shows what percentage of your profit is offset by this paper loss, often making property income zero-tax or tax-negative.",
+          meaning: "Total Annualized Return acts like a simplified IRR (Internal Rate of Return). It takes all three major wealth generation distinct vectors of real estate—cash flow, mortgage paydown, and equity appreciation—and aggregates them into one powerful percentage. This lets you compare your entire real estate engine directly against the S&P 500 or bond yields.",
           benchmarks: [
-            { label: 'Standard Shield', value: '30% – 50%' },
-            { label: 'High Efficiency', value: 'Above 75%' },
-            { label: 'Tax Free Income Zone', value: '100%+' },
-          ]
-        }
-      case 'tcd':
-      case 'cash-deployed':
-        return {
-          title: 'Total Cash Deployed',
-          value: formatCurrency(calc.totalDeployed),
-          color: 'var(--yellow)',
-          formula: 'Down Payment + Total Closing Costs = Total Cash Deployed',
-          math: `${formatCurrency(calc.downPayment)} + ${formatCurrency(prop.closing_costs)} = ${formatCurrency(calc.totalDeployed)}`,
-          mathBreakdown: [
-            `Down Payment (${formatCurrency(calc.downPayment)}): The upfront cash required by the bank. Calculated as Purchase Price (${formatCurrency(prop.purchase_price)}) minus original Loan Amount (${formatCurrency(prop.loan_amount)}).`,
-            `Closing Costs (${formatCurrency(prop.closing_costs)}): Points, loan fees, title, and escrow costs paid at acquisition.`
-          ],
-          meaning: "This is your true 'skin in the game'. It's the total upfront, un-leveraged capital you wired to the title company on closing day. This number forms the denominator for nearly all return-on-investment calculations.",
-          benchmarks: [
-            { label: 'FHA / Primary Hustle', value: '3.5% – 5% down' },
-            { label: 'Standard Investment Loan', value: '20% – 25% down' },
-            { label: 'DSCR / Commercial Loan', value: '20% – 30% down' },
-          ]
-        }
-      case 'ipr':
-      case 'interest-ratio':
-        return {
-          title: 'Interest to Principal Ratio',
-          value: calc.interestRatio != null ? `${calc.interestRatio.toFixed(2)} : 1` : '—',
-          color: 'var(--orange)',
-          formula: 'Total Interest Paid to Date ÷ Total Principal Paid to Date',
-          math: `${formatCurrency(calc.totalInterestPaid)} ÷ ${formatCurrency(calc.totalPrincipalPaid)} = ${calc.interestRatio ? calc.interestRatio.toFixed(2) : '—'}`,
-          mathBreakdown: [
-            `Total Interest Paid (${formatCurrency(calc.totalInterestPaid)}): The sum of all historical interest payments made to the bank from acquisition to date.`,
-            `Total Principal Paid (${formatCurrency(calc.totalPrincipalPaid)}): The total amount of actual debt reduced from the tenant's rental payments.`
-          ],
-          meaning: "A 30-year fixed mortgage is heavily front-loaded with interest. In the early years, you might pay $4 in interest for every $1 of principal you pay down. Over time, as the principal decreases, this ratio flips in your favor.",
-          benchmarks: [
-            { label: 'Years 1-5 (7% Rate)', value: 'approx 4.0 – 6.0 : 1' },
-            { label: 'Years 15-20 (Midway)', value: 'approx 1.5 – 1.0 : 1' },
-            { label: 'Years 25-30 (Payoff)', value: 'Sub 0.5 : 1' },
-          ]
-        }
-      case 'cap-rate':
-      case 'cap':
-        return {
-          title: 'Capitalization Rate (Cap Rate)',
-          value: calc.capRate != null ? formatPct(calc.capRate) : '—',
-          color: 'var(--blue)',
-          formula: 'Annual Net Operating Income (NOI) ÷ Current Property Value = Cap Rate',
-          math: `${formatCurrency(calc.noi)} ÷ ${formatCurrency(prop.current_value ?? prop.purchase_price)} = ${calc.capRate ? (calc.capRate/100).toFixed(4) : '—'}`,
-          mathBreakdown: [
-            `NOI (${formatCurrency(calc.noi)}): Your gross annual rent (${formatCurrency(calc.annualRent)}) minus your annualized operational expenses (${formatCurrency(calc.annualOpExp)}).`,
-            `Operating Expenses (${formatCurrency(calc.annualOpExp)}): Includes annualized management fees + expected maintenance + annual HOA dues (${formatCurrency(prop.hoa_amount ?? 0)}). It explicitly EXCLUDES your mortgage payments.`,
-            `Property Value (${formatCurrency(prop.current_value ?? prop.purchase_price)}): Utilizing the current estimated value, or falling back to the original purchase price if no estimate is provided.`
-          ],
-          meaning: "The Cap Rate indicates the unlevered yield of a property. By excluding your mortgage, it acts as a universal ruler to compare one property's operational profitability directly against another's, regardless of how they are financed.",
-          benchmarks: [
-            { label: 'Class A (Low Risk, Stable)', value: '4.0% – 5.5%' },
-            { label: 'Class B (Average Risk)', value: '5.5% – 7.5%' },
-            { label: 'Class C (Higher Risk)', value: '7.5% – 10.0%+' },
-          ]
-        }
-      case 'principal-yield':
-      case 'ppy':
-        return {
-          title: 'Principal Paydown Yield',
-          value: calc.principalPaydownYield != null ? formatPct(calc.principalPaydownYield) : '—',
-          color: 'var(--green)',
-          formula: 'Annual Principal Paid ÷ Total Cash Deployed',
-          math: `${formatCurrency(calc.annualPrincipal ?? 0)} ÷ ${formatCurrency(calc.totalDeployed)} = ${calc.principalPaydownYield ? (calc.principalPaydownYield/100).toFixed(4) : '—'}`,
-          mathBreakdown: [
-            `Annualized Principal (${formatCurrency(calc.annualPrincipal ?? 0)}): The estimated total principal reduction over 12 months, based on your mortgage amortization to date.`,
-            `Total Cash Deployed (${formatCurrency(calc.totalDeployed)}): Your total original cash investment (Down Payment + Closing Costs).`
-          ],
-          meaning: "Principal paydown yield calculates the annualized return generated strictly by your debt amortization. Every mortgage payment reduces your debt and increases your equity—this metric treats that as a cash-equivalent yield.",
-          benchmarks: [
-            { label: 'Typical 30yr (Years 1-5)', value: '1.5% – 2.5%' },
-            { label: 'Typical 30yr (Years 10-15)', value: '3.0% – 4.5%' },
-            { label: '15yr Accelerator', value: '5.0%+' },
+            { label: 'S&P 500 Average', value: '7.0% – 10.0%' },
+            { label: 'Healthy Real Estate Total Return', value: '12.0% – 18.0%' },
+            { label: 'Exceptional Performers', value: '20.0%+' },
           ]
         }
       default:
