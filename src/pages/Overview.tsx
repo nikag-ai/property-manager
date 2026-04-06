@@ -10,6 +10,7 @@ import { InfoTooltip } from '../components/common/InfoTooltip'
 import { useUpdatePropertyValue } from '../hooks/useData'
 import { formatCurrency, formatDate, formatPct } from '../lib/utils'
 import { computeInvestmentIntelligence } from '../lib/calculations'
+import { METRIC_COUNT } from '../lib/metrics'
 import { Link } from 'react-router-dom'
 import { TransactionTable } from '../components/ledger/TransactionTable'
 import { useTransactions } from '../hooks/useData'
@@ -170,7 +171,7 @@ export default function Overview() {
             <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>Health Snapshot</span>
           </div>
           <Link to="/intelligence/all" className="btn btn-secondary btn-sm">
-            View all 19 metrics →
+            View all {METRIC_COUNT} metrics →
           </Link>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>

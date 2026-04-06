@@ -101,6 +101,14 @@ export default function IntelligenceHub() {
       linkTo: "/intelligence/yoc"
     })
 
+    const em = calc.equityMultiple
+    list.push({
+      key: 'em', label: "Equity Multiple", value: em != null ? `${em.toFixed(2)}x` : '—',
+      sub: "Total growth vs initial cash", tooltip: "Current net equity plus historical cash flow divided by total cash deployed.",
+      color: "var(--purple)", category: 'Returns', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/equity-multiple"
+    })
+
     // 2. Projections (EXPERT)
     const pcf = calc.projAnnualCF
     list.push({
@@ -188,6 +196,14 @@ export default function IntelligenceHub() {
       linkTo: "/intelligence/op-efficiency"
     })
 
+    const acap = calc.adjustedCapRate
+    list.push({
+      key: 'adjCap', label: "Adjusted Cap Rate", value: acap != null ? formatPct(acap) : '—',
+      sub: "Cap Rate including 5% reserves", tooltip: "Estimated cap rate after accounting for a 5% capital expenditure reserve.",
+      color: "var(--indigo)", category: 'Efficiency', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/adjusted-cap"
+    })
+
     // 4. Stress Tests
     const rst = calc.rateStressTest
     list.push({
@@ -266,6 +282,22 @@ export default function IntelligenceHub() {
       linkTo: "/intelligence/ltv"
     })
 
+    const sens = calc.interestSensitivity
+    list.push({
+      key: 'sensitivity', label: "Interest Sensitivity", value: sens != null ? `${sens.toFixed(1)}%` : '—',
+      sub: "ROI hit per 1% rate hike", tooltip: "How much your cash flow would drop if your interest rate increased by 1%.",
+      color: "var(--red)", category: 'Risk', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/sensitivity"
+    })
+
+    const dy = calc.debtYield
+    list.push({
+      key: 'debtYield', label: "Debt Yield", value: dy != null ? `${dy.toFixed(1)}%` : '—',
+      sub: "NOI as % of total loan", tooltip: "Annual NOI divided by the original loan amount. A key bank metric.",
+      color: "var(--teal)", category: 'Risk', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/debt-yield"
+    })
+
     // 6. Wealth & Context
     const shield = calc.taxShieldImpact
     list.push({
@@ -281,6 +313,38 @@ export default function IntelligenceHub() {
       sub: "Your total 'skin in the game'", tooltip: "Down payment plus closing costs.",
       color: "var(--yellow)", category: 'Wealth', performanceScore: 0, health: 'info',
       linkTo: "/intelligence/tcd"
+    })
+
+    const capture = calc.equityCapture
+    list.push({
+      key: 'capture', label: "Equity Capture", value: capture != null ? formatPct(capture) : '—',
+      sub: "Profit over basis", tooltip: "Unrealized gain (Current Value - Basis) divided by Basis.",
+      color: "var(--purple)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/capture"
+    })
+
+    const ber = calc.breakEvenOccupancy
+    list.push({
+      key: 'ber', label: "Break-Even Occupancy", value: ber != null ? formatPct(ber) : '—',
+      sub: "Required occupancy to cover costs", tooltip: "Percentage of the year the property must be occupied to cover all OpEx and debt service.",
+      color: "var(--teal)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/ber"
+    })
+
+    const gross = metrics?.gross_equity
+    list.push({
+      key: 'gross', label: "Gross Equity", value: gross != null ? formatCurrency(gross) : '—',
+      sub: "Value minus debt", tooltip: "Current market value minus the remaining mortgage balance.",
+      color: "var(--blue)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/gross-equity"
+    })
+
+    const net = metrics?.net_equity
+    list.push({
+      key: 'net', label: "Net Equity (True Cash Out)", value: net != null ? formatCurrency(net) : '—',
+      sub: "Actual cash out at sale", tooltip: "Gross equity minus estimated selling costs and historical P&L.",
+      color: "var(--purple)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/net-equity"
     })
 
     return list
