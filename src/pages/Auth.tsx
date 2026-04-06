@@ -15,9 +15,9 @@ export default function Auth() {
     setError('')
 
     let targetEmail = ''
-    if (password === 'clarksville-admin') {
+    if (password === 'admin2026') {
       targetEmail = 'nik.agarwal98@gmail.com'
-    } else if (password === 'clarksville-guest') {
+    } else if (password === 'guest2026') {
       targetEmail = 'guest2@clarksville.app'
     } else {
       setError('Invalid site password')
