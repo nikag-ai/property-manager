@@ -27,6 +27,7 @@ export default function App() {
               <Route path="property" element={<PropertyDetails />} />
               <Route path="intelligence/all" element={<IntelligenceHub />} />
               <Route path="intelligence/:metric" element={<IntelligenceDeepDive />} />
+              <Route path="equity/:metric" element={<IntelligenceDeepDive />} />
             </Route>
           </Routes>
         </BrowserRouter>

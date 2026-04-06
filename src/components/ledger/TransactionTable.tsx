@@ -3,6 +3,7 @@ import type { Transaction } from '../../lib/types'
 import { formatDate, formatCurrency, colorClass, downloadBlob } from '../../lib/utils'
 import Papa from 'papaparse'
 import clsx from 'clsx'
+import { InfoTooltip } from '../common/InfoTooltip'
 
 interface TransactionTableProps {
   transactions: Transaction[]
@@ -11,6 +12,18 @@ interface TransactionTableProps {
 
 export function TransactionTable({ transactions, isLoading }: TransactionTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
+
+  const totalPages = Math.ceil(transactions.length / pageSize)
+  const paginated = transactions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  // Reset to first page if total results change (e.g. search/filter)
+  const [lastLength, setLastLength] = useState(transactions.length)
+  if (transactions.length !== lastLength) {
+    setLastLength(transactions.length)
+    setCurrentPage(1)
+  }
 
   const toggleExpand = (id: string) => {
     setExpanded(prev => {
@@ -71,7 +84,7 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
             </tr>
           </thead>
           <tbody>
-            {transactions.map(t => (
+            {paginated.map(t => (
               <>
                 <tr key={t.id}>
                   <td>
@@ -102,7 +115,11 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
                   </td>
                   <td>
                     {t.is_auto_posted && (
-                      <span title="Auto-posted by rule" style={{ color: 'var(--blue)', fontSize: '0.75rem' }}>⚡</span>
+                      <span className="info-tooltip-wrap plain-trigger tooltip-left">
+                        <InfoTooltip content="Auto-posted: This transaction was automatically generated based on your recurring rules or loan amortization schedule.">
+                          <span style={{ color: 'var(--blue)', fontSize: '0.9rem' }}>⚡</span>
+                        </InfoTooltip>
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -128,6 +145,33 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '0 4px' }}>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+            Showing {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, transactions.length)} of {transactions.length}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => prev - 1)}
+            >
+              ← Prev
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-subtle)', padding: '0 8px' }}>
+              Page {currentPage} of {totalPages}
+            </div>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => prev + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

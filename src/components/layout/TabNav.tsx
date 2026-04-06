@@ -21,8 +21,7 @@ export function TabNav() {
           key={tab.to}
           to={tab.to}
           end={tab.to === '/'}
-          className={({ isActive }) => `tab-nav-item${isActive ? ' active' : ''}`}
-          style={tab.label === 'Quick Add' ? { marginLeft: 'auto' } : undefined}
+          className={({ isActive }) => `tab-nav-item ${tab.label === 'Quick Add' ? 'ml-auto-desktop' : ''}${isActive ? ' active' : ''}`}
         >
           <span aria-hidden="true" style={{ fontSize: '0.9rem' }}>{tab.icon}</span>
           {tab.label}

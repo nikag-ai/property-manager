@@ -76,7 +76,7 @@ export default function MonthlyBreakdown() {
         <div className="card">
           <h3 style={{ marginBottom: 20 }}>High-Level Month over Month</h3>
           <div className="table-responsive">
-            <table className="table">
+            <table>
               <thead>
                 <tr>
                   <th>Month</th>
@@ -122,23 +122,23 @@ export default function MonthlyBreakdown() {
       ) : (
         <div className="card">
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
-            <div className="form-group" style={{ flex: '0 0 160px' }}>
+            <div className="form-group" style={{ flex: '1 1 120px' }}>
               <label className="form-label">Month</label>
               <input type="month" className="form-input" value={filters.month ?? ''}
                 onChange={e => setFilters(f => ({ ...f, month: e.target.value || undefined }))} />
             </div>
-            <div className="form-group" style={{ flex: '0 0 180px' }}>
+            <div className="form-group" style={{ flex: '1 1 160px' }}>
               <label className="form-label">Tag</label>
               <input type="text" className="form-input" placeholder="Filter by tag…" value={filters.tag_name ?? ''}
                 onChange={e => setFilters(f => ({ ...f, tag_name: e.target.value || undefined }))} />
             </div>
-            <div className="form-group" style={{ flex: '1 1 180px' }}>
+            <div className="form-group" style={{ flex: '2 1 180px', minWidth: 200 }}>
               <label className="form-label">Search notes</label>
               <input type="text" className="form-input" placeholder="Search…" value={filters.search ?? ''}
                 onChange={e => setFilters(f => ({ ...f, search: e.target.value || undefined }))} />
             </div>
             {hasFilters && (
-              <button className="btn btn-ghost btn-sm" onClick={() => {
+              <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-end' }} onClick={() => {
                 setFilters({})
                 setSearchParams({}, { replace: true })
               }}>Clear filters</button>

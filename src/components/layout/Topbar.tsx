@@ -19,9 +19,9 @@ export function Topbar() {
 
   return (
     <header className="topbar">
-      <Link to="/" className="topbar-logo">
+      <Link to="/" className="topbar-logo" title="RentLedger Home">
         <HomeIcon />
-        RentLedger
+        <span className="desktop-only">RentLedger</span>
       </Link>
 
       {properties.length > 0 && (

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
 import { useMetrics, useMonthlySummary, useActiveLease } from '../hooks/useData'
 import { KpiCard, KpiRow } from '../components/kpi/KpiCard'
+import clsx from 'clsx'
 import { EquityPanels } from '../components/equity/EquityPanels'
 import { LeaseTracker } from '../components/lease/LeaseTracker'
 import { CashFlowChart } from '../components/charts/CashFlowChart'
@@ -10,6 +11,8 @@ import { useUpdatePropertyValue } from '../hooks/useData'
 import { formatCurrency, formatDate, formatPct } from '../lib/utils'
 import { computeInvestmentIntelligence } from '../lib/calculations'
 import { Link } from 'react-router-dom'
+import { TransactionTable } from '../components/ledger/TransactionTable'
+import { useTransactions } from '../hooks/useData'
 
 function EditableValue({ label, value, sub, onSave }: {
   label: string; value: number | null; sub?: string; onSave: (v: number) => void
@@ -69,6 +72,37 @@ export default function Overview() {
   const activeLease = useActiveLease(prop?.id ?? null)
   const updateValue = useUpdatePropertyValue()
 
+  // Activity section logic
+  const [timeRange, setTimeRange] = useState<'30d' | '3m' | '6m' | 'ytd' | 'all'>('6m')
+
+  const dateFrom = useMemo(() => {
+    const d = new Date()
+    if (timeRange === '30d') d.setDate(d.getDate() - 30)
+    else if (timeRange === '3m') d.setMonth(d.getMonth() - 3)
+    else if (timeRange === '6m') d.setMonth(d.getMonth() - 6)
+    else if (timeRange === 'ytd') {
+      d.setMonth(0); d.setDate(1) // Jan 1st
+    } else {
+      return undefined
+    }
+    return d.toISOString().split('T')[0]
+  }, [timeRange])
+
+  const { data: allActivityTxns = [], isLoading: txLoading } = useTransactions(prop?.id ?? null, { date_from: dateFrom })
+
+  const activityTxns = useMemo(() => {
+    return allActivityTxns.filter(tx => Math.abs(tx.amount) !== 94200)
+  }, [allActivityTxns])
+
+  const activitySummary = useMemo(() => {
+    return activityTxns.reduce((acc, tx) => {
+      if (tx.amount > 0) acc.income += tx.amount
+      else acc.expenses += Math.abs(tx.amount)
+      acc.cashflow += tx.amount
+      return acc
+    }, { income: 0, expenses: 0, cashflow: 0 })
+  }, [activityTxns])
+
   if (!prop) return <div className="empty-state" style={{ marginTop: 80 }}><p>No property found.</p></div>
 
   const calc = computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11)
@@ -76,7 +110,7 @@ export default function Overview() {
   return (
     <main className="page-content">
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: '1.5rem' }}>{prop.address}</h1>
+        <h1 style={{ fontSize: 'var(--h1-size, 1.5rem)' }}>{prop.address}</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: 4 }}>
           Purchased {formatDate(prop.purchase_date)} · {prop.loan_term_months / 12}yr @ {(prop.interest_rate * 100).toFixed(2)}% · {calc?.monthsOwned} months owned
         </p>
@@ -84,10 +118,14 @@ export default function Overview() {
 
       {/* ── Main KPIs ── */}
       <KpiRow>
-        <KpiCard label="Net Equity" value={metrics?.net_equity} accent="var(--purple)" isLoading={isLoading}
-          sub="Current value − loan − selling costs − all-in P&L" />
-        <KpiCard label="Gross Equity" value={metrics?.gross_equity} accent="var(--blue)" isLoading={isLoading}
-          sub="Current value − remaining loan balance" />
+        <Link to="/equity/net" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <KpiCard label="Net Equity" value={metrics?.net_equity} accent="var(--purple)" isLoading={isLoading}
+            sub="Current value − loan − selling costs − all-in P&L" />
+        </Link>
+        <Link to="/equity/gross" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <KpiCard label="Gross Equity" value={metrics?.gross_equity} accent="var(--blue)" isLoading={isLoading}
+            sub="Current value − remaining loan balance" />
+        </Link>
         <KpiCard label="Monthly Cash Flow" value={metrics?.monthly_cash_flow} accent="var(--green)" isLoading={isLoading}
           sub="This month: rent − (interest + escrow + expenses)" />
         <Link to="/monthly?view=table" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -99,8 +137,8 @@ export default function Overview() {
       </KpiRow>
 
       {/* ── Property value editors ── */}
-      <div className="card" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px,1fr))', gap: 24 }}>
-        <EditableValue label="Current Estimated Value" value={prop.current_value}
+      <div className="card" style={{ marginBottom: 24, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', gap: 24 }}>
+        <EditableValue label="Value" value={prop.current_value}
           sub={prop.current_value_updated_at ? `Updated ${formatDate(prop.current_value_updated_at)}` : 'Not set'}
           onSave={v => updateValue.mutate({ propertyId: prop.id, value: v })} />
         <div>
@@ -132,10 +170,10 @@ export default function Overview() {
             <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>Health Snapshot</span>
           </div>
           <Link to="/intelligence/all" className="btn btn-secondary btn-sm">
-            View all 13 metrics →
+            View all 19 metrics →
           </Link>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
           <MetricTile
             label="Total Annualized Return"
             linkTo="/intelligence/total-return"
@@ -180,6 +218,46 @@ export default function Overview() {
 
       {/* ── Lease Tracker ── */}
       <LeaseTracker propertyId={prop.id} />
+
+      {/* ── Activity Hub ── */}
+      <section style={{ marginTop: 48 }}>
+        <div className="section-header" style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: '1.25rem' }}>Activity</h2>
+          <div className="toggle-group" style={{ marginLeft: 'auto' }}>
+            {(['30d', '3m', '6m', 'ytd', 'all'] as const).map(range => (
+              <button
+                key={range}
+                className={clsx('toggle-btn', timeRange === range && 'active')}
+                onClick={() => setTimeRange(range)}
+                style={{ textTransform: 'uppercase', fontSize: '0.7rem', padding: '6px 12px' }}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20, padding: '0 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Income:</span>
+            <span className="td-mono text-green" style={{ fontWeight: 600 }}>{formatCurrency(activitySummary.income)}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Expenses:</span>
+            <span className="td-mono text-red" style={{ fontWeight: 600 }}>{formatCurrency(-activitySummary.expenses)}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Net CF:</span>
+            <span className={clsx('td-mono', activitySummary.cashflow >= 0 ? 'text-green' : 'text-red')} style={{ fontWeight: 700 }}>
+              {formatCurrency(activitySummary.cashflow)}
+            </span>
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '0 0 var(--space-4) 0' }}>
+          <TransactionTable transactions={activityTxns} isLoading={txLoading} />
+        </div>
+      </section>
     </main>
   )
 }

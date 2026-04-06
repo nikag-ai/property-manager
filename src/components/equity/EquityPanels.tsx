@@ -78,7 +78,7 @@ export function EquityPanels({ metrics, closingCosts, purchasePrice, loanAmount 
           : '📦 Capitalized: Closing costs folded into cost basis, not P&L. Operating cash flow looks cleaner by $' + closingCosts.toLocaleString() + '.'}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+      <div className="equity-grid-row">
         {/* Equity waterfall */}
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.75rem', fontWeight: 700, marginBottom: 16,

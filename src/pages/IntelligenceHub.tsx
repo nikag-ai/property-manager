@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
 import { useMetrics, useActiveLease } from '../hooks/useData'
 import { computeInvestmentIntelligence } from '../lib/calculations'
@@ -28,16 +28,19 @@ function MetricTile({ label, value, sub, color, tooltip, linkTo }: {
 }
 
 type Health = 'healthy' | 'warning' | 'critical' | 'info' | 'unknown'
+type Category = 'Returns' | 'Efficiency' | 'Risk' | 'Wealth'
 
 interface MetricConfig {
   key: string
   label: string
-  valueFormat: string
-  color: string
+  value: string
   sub: string
   tooltip: string
-  linkTo: string
+  color: string
   health: Health
+  category: Category
+  performanceScore: number // 3=Healthy, 2=Warning, 1=Critical, 0=Info
+  linkTo: string
 }
 
 export default function IntelligenceHub() {
@@ -50,274 +53,250 @@ export default function IntelligenceHub() {
   const [simValue, setSimValue] = useState<string>('')
   const [simOpEx, setSimOpEx] = useState<string>('')
 
-  // Parse simulated values
   const r = simRent ? parseFloat(simRent) : undefined
   const v = simValue ? parseFloat(simValue) : undefined
   const o = simOpEx ? parseFloat(simOpEx) : undefined
 
   const calc = prop ? computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11, r, v, o) : null
 
-  if (!prop || !calc) {
-    return <div className="empty-state" style={{ marginTop: 80 }}><p>Loading...</p></div>
-  }
+  const items = useMemo(() => {
+    if (!prop || !calc) return []
 
-  // Define evaluating logic
-  const items: MetricConfig[] = []
+    const list: MetricConfig[] = []
 
-  // 1. Total Annualized Return
-  const tar = calc.totalAnnualizedReturn
-  let tarHealth: Health = 'unknown'
-  if (tar != null) tarHealth = tar >= 12 ? 'healthy' : tar >= 8 ? 'warning' : 'critical'
-  items.push({
-    key: 'tar', label: "Total Annualized Return (IRR)", linkTo: "/intelligence/total-return",
-    valueFormat: tar != null ? formatPct(tar) : '—', color: "var(--purple)",
-    sub: "Cash flow + principal + appreciation",
-    tooltip: "Sum of Annual Cash Flow + Principal Paydown + Appreciation divided by your total cash deployed.",
-    health: tarHealth
-  })
+    // 1. Returns & Yields
+    const tar = calc.totalAnnualizedReturn
+    list.push({
+      key: 'tar', label: "Total Annualized Return", value: tar != null ? formatPct(tar) : '—',
+      sub: "Combined IRR from all vectors", tooltip: "Sum of Cash Flow + Principal + Appreciation divided by total deployed.",
+      color: "var(--purple)", category: 'Returns', performanceScore: tar != null ? (tar >= 12 ? 3 : tar >= 8 ? 2 : 1) : 0,
+      health: tar != null ? (tar >= 12 ? 'healthy' : tar >= 8 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/total-return"
+    })
 
-  // 2. Cash-on-Cash Return
-  const coc = calc.cocReturn
-  let cocHealth: Health = 'unknown'
-  if (coc != null) cocHealth = coc >= 8 ? 'healthy' : coc >= 5 ? 'warning' : 'critical'
-  items.push({
-    key: 'coc', label: "Cash-on-Cash Return", linkTo: "/intelligence/coc",
-    valueFormat: coc != null ? formatPct(coc) : '—', color: cocHealth === 'healthy' ? 'var(--green)' : 'var(--text)',
-    sub: `${formatCurrency(calc.annualCF ?? 0)}/yr on ${formatCurrency(calc.totalDeployed)} deployed`,
-    tooltip: "Annualized operational cash flow ÷ total cash invested.",
-    health: cocHealth
-  })
+    const coc = calc.cocReturn
+    list.push({
+      key: 'coc', label: "Cash-on-Cash Return", value: coc != null ? formatPct(coc) : '—',
+      sub: "Operational cash yield", tooltip: "Annualized operational cash flow ÷ total cash invested.",
+      color: "var(--green)", category: 'Returns', performanceScore: coc != null ? (coc >= 8 ? 3 : coc >= 5 ? 2 : 1) : 0,
+      health: coc != null ? (coc >= 8 ? 'healthy' : coc >= 5 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/coc"
+    })
 
-  // 3. DSCR
-  const dscr = calc.dscr
-  let dscrHealth: Health = 'unknown'
-  if (dscr != null) dscrHealth = dscr >= 1.25 ? 'healthy' : dscr >= 1.0 ? 'warning' : 'critical'
-  items.push({
-    key: 'dscr', label: "DSCR", linkTo: "/intelligence/dscr",
-    valueFormat: dscr != null ? dscr.toFixed(2) : '—', color: dscrHealth === 'healthy' ? 'var(--green)' : 'var(--text)',
-    sub: dscr != null && dscr >= 1.25 ? '✓ Bankable' : dscr != null && dscr >= 1 ? 'Marginal' : '✗ Below 1.0',
-    tooltip: "Debt Service Coverage Ratio. Represents how comfortably your net rental income covers the mortgage.",
-    health: dscrHealth
-  })
+    const roe = calc.roe
+    list.push({
+      key: 'roe', label: "Return on Equity (ROE)", value: roe != null ? formatPct(roe) : '—',
+      sub: "Efficiency of locked capital", tooltip: "Cash flow divided by current net equity.",
+      color: "var(--yellow)", category: 'Returns', performanceScore: roe != null ? (roe >= 8 ? 3 : roe >= 4 ? 2 : 1) : 0,
+      health: roe != null ? (roe >= 8 ? 'healthy' : roe >= 4 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/roe"
+    })
 
-  // 4. Return on Equity (ROE)
-  const roe = calc.roe
-  let roeHealth: Health = 'unknown'
-  if (roe != null) roeHealth = roe >= 8 ? 'healthy' : roe >= 4 ? 'warning' : 'critical'
-  items.push({
-    key: 'roe', label: "Return on Equity (ROE)", linkTo: "/intelligence/roe",
-    valueFormat: roe != null ? formatPct(roe) : '—', color: "var(--yellow)",
-    sub: `Yield on your $${((calc.capitalizedNetEq ?? 0)/1000).toFixed(1)}k net equity`,
-    tooltip: "Cash flow divided by current net equity.",
-    health: roeHealth
-  })
+    const yoc = calc.yoc
+    list.push({
+      key: 'yoc', label: "Yield on Cost (YOC)", value: yoc != null ? formatPct(yoc) : '—',
+      sub: "NOI relative to original basis", tooltip: "Current NOI divided by your original purchase price plus closing costs.",
+      color: "var(--teal)", category: 'Returns', performanceScore: yoc != null ? (yoc >= 6 ? 3 : yoc >= 4.5 ? 2 : 1) : 0,
+      health: yoc != null ? (yoc >= 6 ? 'healthy' : yoc >= 4.5 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/yoc"
+    })
 
-  // 5. Cap Rate
-  const cap = calc.capRate
-  let capHealth: Health = 'unknown'
-  if (cap != null) capHealth = cap >= 5.5 ? 'healthy' : cap >= 4 ? 'warning' : 'critical'
-  items.push({
-    key: 'cap', label: "Cap Rate", linkTo: "/intelligence/cap-rate",
-    valueFormat: cap != null ? formatPct(cap) : '—', color: "var(--blue)",
-    sub: `NOI ${formatCurrency(calc.noi)}/yr ÷ property value`,
-    tooltip: "Net Operating Income ÷ property value. Measures yield independent of financing.",
-    health: capHealth
-  })
+    const em = calc.equityMultiple
+    list.push({
+      key: 'em', label: "Equity Multiple", value: em != null ? `${em.toFixed(2)}×` : '—',
+      sub: "Total capital growth factor", tooltip: "(Net equity + cash deployed) ÷ cash deployed.",
+      color: "var(--purple)", category: 'Returns', performanceScore: em != null ? (em >= 1.5 ? 3 : em >= 1.2 ? 2 : 1) : 0,
+      health: em != null ? (em >= 1.5 ? 'healthy' : em >= 1.2 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/equity-multiple"
+    })
 
-  // 6. Gross Yield (GRM)
-  const grm = calc.grm
-  let grmHealth: Health = 'unknown'
-  if (grm != null) grmHealth = grm >= 8 ? 'healthy' : grm >= 5 ? 'warning' : 'critical'
-  items.push({
-    key: 'grm', label: "Gross Yield (GRM)", linkTo: "/intelligence/grm",
-    valueFormat: grm != null ? formatPct(grm) : '—', color: "var(--pink)",
-    sub: `$${((calc.annualRent)/1000).toFixed(1)}k rent on $${((prop.current_value ?? prop.purchase_price)/1000).toFixed(1)}k value`,
-    tooltip: "High-level heuristic: Gross annual rent divided by property value.",
-    health: grmHealth
-  })
+    // 2. Efficiency & Operations
+    const cap = calc.capRate
+    list.push({
+      key: 'cap', label: "Cap Rate (Market)", value: cap != null ? formatPct(cap) : '—',
+      sub: "Unleveraged yield on value", tooltip: "Net Operating Income ÷ property value.",
+      color: "var(--blue)", category: 'Efficiency', performanceScore: cap != null ? (cap >= 5.5 ? 3 : cap >= 4 ? 2 : 1) : 0,
+      health: cap != null ? (cap >= 5.5 ? 'healthy' : cap >= 4 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/cap-rate"
+    })
 
-  // 7. Break-Even Occupancy
-  const beoc = calc.breakEvenOccupancy
-  let beHealth: Health = 'unknown'
-  if (beoc != null) beHealth = beoc <= 75 ? 'healthy' : beoc <= 85 ? 'warning' : 'critical'
-  items.push({
-    key: 'beo', label: "Break-Even Occupancy", linkTo: "/intelligence/breakeven-occupancy",
-    valueFormat: beoc != null ? formatPct(beoc) : '—', color: "var(--teal)",
-    sub: "How empty forces negative CF",
-    tooltip: "The percentage of the year the property must be rented just to cover all operational and debt expenses.",
-    health: beHealth
-  })
+    const rtv = calc.rtv
+    list.push({
+      key: 'rtv', label: "Rent-to-Value (RTV)", value: rtv != null ? formatPct(rtv) : '—',
+      sub: "Gross monthly rental efficiency", tooltip: "Monthly Rent ÷ property value. Target is usually 0.7% to 1.0% in common markets.",
+      color: "var(--pink)", category: 'Efficiency', performanceScore: rtv != null ? (rtv >= 0.7 ? 3 : rtv >= 0.5 ? 2 : 1) : 0,
+      health: rtv != null ? (rtv >= 0.7 ? 'healthy' : rtv >= 0.5 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/rtv"
+    })
 
-  // 8. OER
-  const oer = calc.oer
-  let oerHealth: Health = 'unknown'
-  if (oer != null) oerHealth = oer <= 45 ? 'healthy' : oer <= 55 ? 'warning' : 'critical'
-  items.push({
-    key: 'oer', label: "Operating Expense Ratio (OER)", linkTo: "/intelligence/oer",
-    valueFormat: oer != null ? formatPct(oer) : '—', color: "var(--red)",
-    sub: "OpEx as percent of revenue",
-    tooltip: "Operational expenses divided by gross rent. Rule of thumb is 50% for standard rentals.",
-    health: oerHealth
-  })
+    const oer = calc.oer
+    list.push({
+      key: 'oer', label: "Expense Ratio (OER)", value: oer != null ? formatPct(oer) : '—',
+      sub: "Operational overhead efficiency", tooltip: "Operational expenses divided by gross rent.",
+      color: "var(--red)", category: 'Efficiency', performanceScore: oer != null ? (oer <= 45 ? 3 : oer <= 55 ? 2 : 1) : 0,
+      health: oer != null ? (oer <= 45 ? 'healthy' : oer <= 55 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/oer"
+    })
 
-  // 9. Principal Paydown Yield
-  const ppy = calc.principalPaydownYield
-  let ppyHealth: Health = 'unknown'
-  if (ppy != null) ppyHealth = ppy >= 3 ? 'healthy' : ppy >= 1.5 ? 'warning' : 'critical'
-  items.push({
-    key: 'ppy', label: "Principal Paydown Yield", linkTo: "/intelligence/principal-yield",
-    valueFormat: ppy != null ? formatPct(ppy) : '—', color: "var(--green)",
-    sub: "The silent return of debt amortization",
-    tooltip: "Your tenant paying down your mortgage principal translates strictly to equity yield relative to your deploy.",
-    health: ppyHealth
-  })
+    const intens = calc.expenseIntensity
+    list.push({
+      key: 'intensity', label: "Expense Intensity", value: intens != null ? formatPct(intens) : '—',
+      sub: "Mgmt/Maintenance % of Revenue", tooltip: "Combined maintenance and management costs relative to revenue.",
+      color: "var(--orange)", category: 'Efficiency', performanceScore: intens != null ? (intens <= 15 ? 3 : intens <= 25 ? 2 : 1) : 0,
+      health: intens != null ? (intens <= 15 ? 'healthy' : intens <= 25 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/intensity"
+    })
 
-  // 10. Equity Multiple (Info/Health blended)
-  const em = calc.equityMultiple
-  let emHealth: Health = 'info'
-  if (em != null) emHealth = em >= 1.5 ? 'healthy' : em >= 1.0 ? 'warning' : 'critical'
-  items.push({
-    key: 'em', label: "Equity Multiple", linkTo: "/intelligence/equity-multiple",
-    valueFormat: em != null ? `${em.toFixed(2)}×` : '—', color: "var(--purple)",
-    sub: "(Net equity + cash deployed) ÷ cash deployed",
-    tooltip: "How much your overall capital has grown across all vectors combined.",
-    health: emHealth
-  })
+    const adjCap = calc.adjustedCapRate
+    list.push({
+      key: 'adjCap', label: "Adjusted Cap Rate", value: adjCap != null ? formatPct(adjCap) : '—',
+      sub: "NOI including 5% CapEx reserve", tooltip: "More realistic Cap Rate that accounts for long-term physical asset needs.",
+      color: "var(--indigo)", category: 'Efficiency', performanceScore: adjCap != null ? (adjCap >= 5.0 ? 3 : adjCap >= 3.5 ? 2 : 1) : 0,
+      health: adjCap != null ? (adjCap >= 5.0 ? 'healthy' : adjCap >= 3.5 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/adjusted-cap"
+    })
 
-  // 11. Total Cash Deployed (Info)
-  items.push({
-    key: 'tcd', label: "Total Cash Deployed", linkTo: "/intelligence/cash-deployed",
-    valueFormat: formatCurrency(calc.totalDeployed), color: "var(--yellow)",
-    sub: `$${(calc.downPayment/1000).toFixed(0)}k down + $${(prop.closing_costs/1000).toFixed(1)}k closing`,
-    tooltip: "All cash you put in. This sets the denominator for almost all yield calculations.",
-    health: 'info'
-  })
+    // 3. Risk & Leverage
+    const dscr = calc.dscr
+    list.push({
+      key: 'dscr', label: "DSCR", value: dscr != null ? dscr.toFixed(2) : '—',
+      sub: "Debt coverage safety margin", tooltip: "Debt Service Coverage Ratio. Represents bankability and risk.",
+      color: "var(--green)", category: 'Risk', performanceScore: dscr != null ? (dscr >= 1.25 ? 3 : dscr >= 1.0 ? 2 : 1) : 0,
+      health: dscr != null ? (dscr >= 1.25 ? 'healthy' : dscr >= 1.0 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/dscr"
+    })
 
-  // 12. Interest:Principal Ratio (Info)
-  items.push({
-    key: 'ipr', label: "Interest:Principal Ratio", linkTo: "/intelligence/interest-ratio",
-    valueFormat: calc.interestRatio != null ? `${calc.interestRatio.toFixed(1)}:1` : '—', color: "var(--orange)",
-    sub: `$${((metrics?.total_interest_paid ?? 0)/1000).toFixed(1)}k interest per $${((metrics?.total_principal_paid ?? 0)/1000).toFixed(1)}k principal`,
-    tooltip: "How much of your mortgage payment goes to the bank vs your own equity bucket.",
-    health: 'info'
-  })
+    const ltv = calc.ltv
+    list.push({
+      key: 'ltv', label: "Current LTV", value: ltv != null ? formatPct(ltv) : '—',
+      sub: "Real-time leverage level", tooltip: "Remaining loan balance divided by current property value.",
+      color: "var(--blue)", category: 'Risk', performanceScore: ltv != null ? (ltv <= 70 ? 3 : ltv <= 85 ? 2 : 1) : 0,
+      health: ltv != null ? (ltv <= 70 ? 'healthy' : ltv <= 85 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/ltv"
+    })
 
-  // Grouping
-  const healthyItems = items.filter(i => i.health === 'healthy')
-  const warningItems = items.filter(i => i.health === 'warning')
-  const criticalItems = items.filter(i => i.health === 'critical')
-  const infoItems = items.filter(i => i.health === 'info' || i.health === 'unknown')
+    const dy = calc.debtYield
+    list.push({
+      key: 'debtYield', label: "Debt Yield", value: dy != null ? formatPct(dy) : '—',
+      sub: "Income coverage of total loan", tooltip: "NOI ÷ Loan Amount. Measures risk regardless of interest rates.",
+      color: "var(--teal)", category: 'Risk', performanceScore: dy != null ? (dy >= 10 ? 3 : dy >= 8 ? 2 : 1) : 0,
+      health: dy != null ? (dy >= 10 ? 'healthy' : dy >= 8 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/debt-yield"
+    })
+
+    const beoc = calc.breakEvenOccupancy
+    list.push({
+      key: 'ber', label: "Break-Even Occupancy", value: beoc != null ? formatPct(beoc) : '—',
+      sub: "Safety floor for vacancy", tooltip: "Percentage of year needed to be rented just to cover all costs.",
+      color: "var(--pink)", category: 'Risk', performanceScore: beoc != null ? (beoc <= 75 ? 3 : beoc <= 85 ? 2 : 1) : 0,
+      health: beoc != null ? (beoc <= 75 ? 'healthy' : beoc <= 85 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/ber"
+    })
+
+    const sens = calc.interestSensitivity
+    list.push({
+      key: 'sensitivity', label: "Interest Sensitivity", value: sens != null ? `${sens.toFixed(1)}%` : '—',
+      sub: "CF delta per 1% rate shift", tooltip: "How much your cash flow changes if interest rates move by 1 percentage point.",
+      color: "var(--red)", category: 'Risk', performanceScore: sens != null ? (sens <= 30 ? 3 : sens <= 60 ? 2 : 1) : 0,
+      health: sens != null ? (sens <= 30 ? 'healthy' : sens <= 60 ? 'warning' : 'critical') : 'unknown',
+      linkTo: "/intelligence/sensitivity"
+    })
+
+    // 4. Wealth & Context
+    const capture = calc.equityCapture
+    list.push({
+      key: 'capture', label: "Equity Capture", value: capture != null ? formatPct(capture) : '—',
+      sub: "Unrealized gain on basis", tooltip: "Percentage growth in property value above your total acquisition basis.",
+      color: "var(--purple)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/capture"
+    })
+
+    const shield = calc.taxShieldImpact
+    list.push({
+      key: 'shield', label: "Tax Shield Impact", value: shield != null ? formatPct(shield) : '—',
+      sub: "% of income shielded by depreciation", tooltip: "Heuristic based on legal depreciation limits over a 27.5-year span.",
+      color: "var(--indigo)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/tax-shield"
+    })
+
+    const ipr = calc.interestRatio
+    list.push({
+      key: 'ipr', label: "Interest:Principal Ratio", value: ipr != null ? `${ipr.toFixed(1)}:1` : '—',
+      sub: "Bank share vs Equity share", tooltip: "How much interest is paid for every dollar of principal amortization.",
+      color: "var(--orange)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/interest-ratio"
+    })
+
+    const tcd = calc.totalDeployed
+    list.push({
+      key: 'tcd', label: "Total Cash Deployed", value: formatCurrency(tcd),
+      sub: "Your total 'skin in the game'", tooltip: "Down payment plus closing costs.",
+      color: "var(--yellow)", category: 'Wealth', performanceScore: 0, health: 'info',
+      linkTo: "/intelligence/tcd"
+    })
+
+    return list
+  }, [prop, calc])
+
+  if (!prop || !calc) return <div className="empty-state" style={{ marginTop: 80 }}><p>Loading...</p></div>
+
+  const categories: Category[] = ['Returns', 'Efficiency', 'Risk', 'Wealth']
 
   return (
     <main className="page-content">
-      <button onClick={() => navigate(-1)} className="btn btn-ghost" style={{ paddingLeft: 0, marginBottom: 24, alignSelf: 'flex-start' }}>
-        ← Back to Overview
-      </button>
-
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: 8 }}>Investment Intelligence Hub</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Metrics are evaluated against established real estate industry benchmarks.</p>
+      <div style={{ marginBottom: 24 }}>
+        <button onClick={() => navigate(-1)} className="btn btn-ghost" style={{ paddingLeft: 0 }}>
+          ← Back to Overview
+        </button>
       </div>
 
-      {/* Scenario Simulator Panel */}
-      <div className="card" style={{ marginBottom: 40, border: '2px solid var(--purple)', padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <h3 style={{ fontSize: '1.25rem', color: 'var(--purple)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              ✨ Scenario Simulator
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Tweak numbers to see how it instantly affects property health.</p>
-          </div>
-          {(simRent || simValue || simOpEx) && (
-            <button className="btn btn-outline btn-sm" onClick={() => { setSimRent(''); setSimValue(''); setSimOpEx('') }}>
-              Reset Values
-            </button>
-          )}
-        </div>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 'var(--h1-size, 2rem)', marginBottom: 8 }}>Investment Intelligence Hub</h1>
+        <p style={{ color: 'var(--text-muted)' }}>Institutional property metrics evaluated against industry benchmarks.</p>
+      </div>
+
+      {/* Scenario Simulator */}
+      <div className="card" style={{ marginBottom: 48, border: '2px solid var(--purple)', padding: '24px' }}>
+        <h3 style={{ fontSize: '1.2rem', color: 'var(--purple)', marginBottom: 16 }}>✨ Scenario Simulator</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
           <div>
             <label className="form-label">Monthly Rent</label>
-            <input type="number" className="form-input" 
-              placeholder={activeLease?.monthly_rent.toString() ?? '1200'} 
-              value={simRent} onChange={e => setSimRent(e.target.value)} />
+            <input type="number" className="form-input" placeholder={activeLease?.monthly_rent.toString()} value={simRent} onChange={e => setSimRent(e.target.value)} />
           </div>
           <div>
             <label className="form-label">Property Value</label>
-            <input type="number" className="form-input" 
-              placeholder={(prop?.current_value ?? prop?.purchase_price ?? 0).toString()} 
-              value={simValue} onChange={e => setSimValue(e.target.value)} />
+            <input type="number" className="form-input" placeholder={prop.current_value?.toString()} value={simValue} onChange={e => setSimValue(e.target.value)} />
           </div>
           <div>
             <label className="form-label">Annual Operating Exp.</label>
-            <input type="number" className="form-input" 
-              placeholder={((metrics?.management_cost_ttm ?? 0) * (12/Math.max(1, calc?.monthsOwned??1)) + (prop?.hoa_amount??0)).toFixed(0)} 
-              value={simOpEx} onChange={e => setSimOpEx(e.target.value)} />
+            <input type="number" className="form-input" placeholder={calc.annualOpExp.toFixed(0)} value={simOpEx} onChange={e => setSimOpEx(e.target.value)} />
           </div>
+          {(simRent || simValue || simOpEx) && (
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <button className="btn btn-outline btn-sm" onClick={() => { setSimRent(''); setSimValue(''); setSimOpEx('') }}>Reset Simulation</button>
+            </div>
+          )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
-
-        {/* 🟢 Healthy */}
-        {healthyItems.length > 0 && (
-          <section>
-            <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 20, color: 'var(--green)' }}>
-              🟢 Excellent & Healthy <span style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 400, marginLeft: 8 }}>Exceeding market benchmarks</span>
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-              {healthyItems.map(item => {
-                const { key, valueFormat, health, ...props } = item
-                return <MetricTile key={key} {...props} value={valueFormat} />
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* 🟡 Monitor */}
-        {warningItems.length > 0 && (
-          <section>
-            <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 20, color: 'var(--yellow)' }}>
-              🟡 Borderline & Monitor <span style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 400, marginLeft: 8 }}>Within standard deviation of targets</span>
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-              {warningItems.map(item => {
-                const { key, valueFormat, health, ...props } = item
-                return <MetricTile key={key} {...props} value={valueFormat} />
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* 🔴 Critical */}
-        {criticalItems.length > 0 && (
-          <section>
-            <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 20, color: 'var(--red)' }}>
-              🔴 Needs Attention <span style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 400, marginLeft: 8 }}>Drastically failing industry benchmarks</span>
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-              {criticalItems.map(item => {
-                const { key, valueFormat, health, ...props } = item
-                return <MetricTile key={key} {...props} value={valueFormat} />
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ⚪ Informational */}
-        {infoItems.length > 0 && (
-          <section>
-            <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 20, color: 'var(--text-muted)' }}>
-              ⚪ Contextual Factors
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-              {infoItems.map(item => {
-                const { key, valueFormat, health, ...props } = item
-                return <MetricTile key={key} {...props} value={valueFormat} />
-              })}
-            </div>
-          </section>
-        )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>
+        {categories.map(cat => {
+            const catItems = items.filter(i => i.category === cat)
+            if (catItems.length === 0) return null
+            return (
+              <section key={cat}>
+                <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {cat === 'Returns' && '📈'} {cat === 'Efficiency' && '⚙️'} {cat === 'Risk' && '🛡️'} {cat === 'Wealth' && '🏦'}
+                  {cat}
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+                  {catItems.map(item => (
+                    <MetricTile key={item.key} label={item.label} value={item.value} sub={item.sub} color={item.color} tooltip={item.tooltip} linkTo={item.linkTo} />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
       </div>
     </main>
   )

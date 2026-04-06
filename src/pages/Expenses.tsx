@@ -52,30 +52,30 @@ export default function Expenses() {
 
   return (
     <main className="page-content" style={{ maxWidth: 800 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
         <div>
-          <h1 style={{ fontSize: '2rem', marginBottom: 8 }}>Expenses Breakdown</h1>
+          <h1 style={{ fontSize: 'var(--h1-size, 2rem)', marginBottom: 8 }}>Expenses Breakdown</h1>
           <p style={{ color: 'var(--text-muted)' }}>Visualize cash out flows grouped by category.</p>
         </div>
         
         {/* Toggle Filter */}
-        <div style={{ display: 'flex', background: 'var(--surface-2)', padding: 4, borderRadius: 'var(--radius-md)' }}>
+        <div style={{ display: 'flex', background: 'var(--surface-2)', padding: 4, borderRadius: 'var(--radius-md)', alignSelf: 'flex-start' }}>
           <button 
             onClick={() => { setDuration('ytd'); setSelectedCategory(null); }}
             className={`btn btn-sm ${duration === 'ytd' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ borderRadius: 'var(--radius-sm)' }}>
+            style={{ borderRadius: 'var(--radius-sm)', flex: 1 }}>
             YTD
           </button>
           <button 
             onClick={() => { setDuration('all'); setSelectedCategory(null); }}
             className={`btn btn-sm ${duration === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ borderRadius: 'var(--radius-sm)' }}>
+            style={{ borderRadius: 'var(--radius-sm)', flex: 1 }}>
             All-Time
           </button>
           <button 
             onClick={() => { setDuration('custom'); setSelectedCategory(null); }}
             className={`btn btn-sm ${duration === 'custom' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ borderRadius: 'var(--radius-sm)' }}>
+            style={{ borderRadius: 'var(--radius-sm)', flex: 1 }}>
             Custom…
           </button>
         </div>
@@ -83,17 +83,17 @@ export default function Expenses() {
 
       {/* Custom Date Filters */}
       {duration === 'custom' && (
-        <div className="card" style={{ padding: '16px 20px', marginBottom: 24, display: 'flex', gap: 16, alignItems: 'flex-end', background: 'var(--surface-1)' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
+        <div className="card" style={{ padding: '16px 20px', marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', background: 'var(--surface-1)' }}>
+          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 140px' }}>
             <label className="form-label">Start Date</label>
             <input type="date" className="form-input" value={customStart} onChange={e => setCustomStart(e.target.value)} />
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 140px' }}>
             <label className="form-label">End Date</label>
             <input type="date" className="form-input" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
           </div>
           {(customStart || customEnd) && (
-            <button className="btn btn-ghost btn-sm" onClick={() => { setCustomStart(''); setCustomEnd(''); }}>Clear Custom</button>
+            <button className="btn btn-ghost btn-sm" style={{ flex: '0 0 auto' }} onClick={() => { setCustomStart(''); setCustomEnd(''); }}>Clear Custom</button>
           )}
         </div>
       )}
@@ -109,11 +109,11 @@ export default function Expenses() {
       ) : (
         <>
           {/* Top Line KPI */}
-          <div className="card" style={{ marginBottom: 32, textAlign: 'center', padding: '32px 24px' }}>
-            <div style={{ fontSize: '1rem', color: 'var(--text-subtle)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
+          <div className="card" style={{ marginBottom: 32, textAlign: 'center', padding: 'var(--space-8) var(--space-4)' }}>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-subtle)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
               {duration === 'ytd' ? `${new Date().getFullYear()} Total Expenses` : duration === 'custom' ? 'Custom Period Total Expenses' : 'Lifetime Total Expenses'}
             </div>
-            <div style={{ fontSize: '3rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--red)' }}>
+            <div style={{ fontSize: 'clamp(1.75rem, 8vw, 3rem)', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--red)' }}>
               {formatCurrency(totalExpense)}
             </div>
           </div>
@@ -137,13 +137,13 @@ export default function Expenses() {
             </div>
             
             {/* Legend grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
               {expenseData.map((item, idx) => {
                 const pct = (item.amount / totalExpense) * 100
                 if (pct < 1) return null
                 return (
-                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: colors[idx % colors.length] }} />
+                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors[idx % colors.length], flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label} ({pct.toFixed(0)}%)</span>
                   </div>
                 )
@@ -164,20 +164,20 @@ export default function Expenses() {
                   onClick={() => setSelectedCategory(isSelected ? null : item.label)}
                   style={{ 
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                    padding: '16px 20px', 
+                    padding: '12px 16px', 
                     borderLeft: `4px solid ${colors[idx % colors.length]}`,
                     border: isSelected ? `2px solid var(--purple)` : undefined,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    transform: isSelected ? 'scale(1.01)' : 'scale(1)'
+                    gap: 12
                   }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ background: 'var(--surface-3)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ background: 'var(--surface-3)', padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                       {pct.toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 500 }}>{item.label}</div>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 500 }}>{item.label}</div>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', fontWeight: 700 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', fontWeight: 700 }}>
                     {formatCurrency(item.amount)}
                   </div>
                 </div>
@@ -187,15 +187,17 @@ export default function Expenses() {
 
           {/* Drill Down Ledger Modal */}
           {selectedCategory && (
-            <div className="card" style={{ marginTop: 40, borderTop: '4px solid var(--border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: '1.25rem' }}>Ledger: {selectedCategory}</h3>
+            <div className="card" style={{ marginTop: 40, borderTop: '4px solid var(--border)', padding: 'var(--space-4) 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 var(--space-4)' }}>
+                <h3 style={{ fontSize: '1.1rem' }}>Ledger: {selectedCategory}</h3>
                 <button className="btn btn-ghost btn-sm" onClick={() => setSelectedCategory(null)}>✕ Close</button>
               </div>
-              <TransactionTable 
-                transactions={(transactions ?? []).filter(t => (t.tag_name || 'Uncategorized') === selectedCategory && t.amount < 0)} 
-                isLoading={isLoading} 
-              />
+              <div className="table-responsive">
+                <TransactionTable 
+                  transactions={(transactions ?? []).filter(t => (t.tag_name || 'Uncategorized') === selectedCategory && t.amount < 0)} 
+                  isLoading={isLoading} 
+                />
+              </div>
             </div>
           )}
         </>

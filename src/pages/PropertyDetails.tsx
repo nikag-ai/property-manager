@@ -155,7 +155,7 @@ export default function PropertyDetails() {
         
         <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
           <div className="form-label" style={{ marginBottom: 8 }}>External Listings</div>
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <a href="https://www.zillow.com/homedetails/864-Moray-Ln-Clarksville-TN-37043/456109539_zpid/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 2 }}>Zillow ↗</a>
             <a href="https://www.redfin.com/TN/Clarksville/864-Moray-Ln-37043/home/197273821" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 2 }}>Redfin ↗</a>
             <a href="https://www.realtor.com/realestateandhomes-detail/M9453539394" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 2 }}>Realtor.com ↗</a>
@@ -177,51 +177,51 @@ export default function PropertyDetails() {
           <div className="skeleton" style={{ height: 300 }} />
         ) : (
           <>
-            <div className="table-wrapper" style={{ maxHeight: 480, overflowY: 'auto' }}>
-              <table>
-                <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--surface-2)' }}>
-                  <tr>
-                    <th>#</th>
-                    <th>Date</th>
-                    <th style={{ textAlign: 'right' }}>Principal</th>
-                    <th style={{ textAlign: 'right' }}>Interest</th>
-                    <th style={{ textAlign: 'right' }}>Escrow</th>
-                    <th style={{ textAlign: 'right' }}>Total</th>
-                    <th style={{ textAlign: 'right' }}>Balance</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedRows.map(row => (
-                    <tr key={row.id} style={{ opacity: row.is_posted ? 0.65 : 1 }}>
-                      <td className="td-mono" style={{ color: 'var(--text-muted)' }}>{row.payment_number}</td>
-                      <td className="td-mono" style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                        {formatDate(row.payment_date)}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <EditCell value={row.principal} onSave={v => handleRowUpdate(row, { principal: v })} />
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <EditCell value={row.interest} onSave={v => handleRowUpdate(row, { interest: v })} />
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <EditCell value={row.escrow} onSave={v => handleRowUpdate(row, { escrow: v })} />
-                      </td>
-                      <td className="td-mono" style={{ textAlign: 'right', fontWeight: 500 }}>
-                        {formatCurrency(row.total_payment)}
-                      </td>
-                      <td className="td-mono" style={{ textAlign: 'right' }}>
-                        <EditCell value={row.remaining_balance} onSave={v => handleRowUpdate(row, { remaining_balance: v })} />
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>
-                        {row.is_posted && <span title="Posted" style={{ color: 'var(--green)', fontSize: '0.75rem' }}>✓</span>}
-                        {row.edited_by_user && <span title="Manually edited" style={{ color: 'var(--yellow)', fontSize: '0.75rem', marginLeft: 4 }}>✎</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="table-wrapper table-responsive" style={{ maxHeight: 480, overflowY: 'auto' }}>
+          <table>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--surface-2)' }}>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th style={{ textAlign: 'right' }}>Principal</th>
+                <th style={{ textAlign: 'right' }}>Interest</th>
+                <th style={{ textAlign: 'right' }}>Escrow</th>
+                <th style={{ textAlign: 'right' }}>Total</th>
+                <th style={{ textAlign: 'right' }}>Balance</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedRows.map(row => (
+                <tr key={row.id} style={{ opacity: row.is_posted ? 0.65 : 1 }}>
+                  <td className="td-mono" style={{ color: 'var(--text-muted)' }}>{row.payment_number}</td>
+                  <td className="td-mono" style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {formatDate(row.payment_date)}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <EditCell value={row.principal} onSave={v => handleRowUpdate(row, { principal: v })} />
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <EditCell value={row.interest} onSave={v => handleRowUpdate(row, { interest: v })} />
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <EditCell value={row.escrow} onSave={v => handleRowUpdate(row, { escrow: v })} />
+                  </td>
+                  <td className="td-mono" style={{ textAlign: 'right', fontWeight: 500 }}>
+                    {formatCurrency(row.total_payment)}
+                  </td>
+                  <td className="td-mono" style={{ textAlign: 'right' }}>
+                    <EditCell value={row.remaining_balance} onSave={v => handleRowUpdate(row, { remaining_balance: v })} />
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>
+                    {row.is_posted && <span title="Posted" style={{ color: 'var(--green)', fontSize: '0.75rem' }}>✓</span>}
+                    {row.edited_by_user && <span title="Manually edited" style={{ color: 'var(--yellow)', fontSize: '0.75rem', marginLeft: 4 }}>✎</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
             {!showAll && amortRows.length > 24 && (
               <div style={{ textAlign: 'center', marginTop: 12 }}>
                 <button className="btn btn-ghost btn-sm" onClick={() => setShowAll(true)}>
@@ -277,7 +277,7 @@ export default function PropertyDetails() {
         {leases.length === 0 ? (
           <div className="empty-state" style={{ padding: '24px 0' }}><p>No leases on record.</p></div>
         ) : (
-          <div className="table-wrapper">
+          <div className="table-responsive">
             <table>
               <thead>
                 <tr>

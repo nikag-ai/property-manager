@@ -1,5 +1,6 @@
 import { useProperty } from '../contexts/PropertyContext'
 import { QuickAddForm } from '../components/quickadd/QuickAddForm'
+import { AutoPostManager } from '../components/quickadd/AutoPostManager'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function QuickAdd() {
@@ -23,6 +24,7 @@ export default function QuickAdd() {
     <main className="page-content">
       <h1 style={{ fontSize: '1.25rem', marginBottom: 24 }}>Quick Add</h1>
       <QuickAddForm />
+      <AutoPostManager />
     </main>
   )
 }

@@ -104,6 +104,19 @@ export function computeInvestmentIntelligence(
     totalAnnualizedReturn,
     totalInterestPaid: metrics?.total_interest_paid ?? 0,
     totalPrincipalPaid: metrics?.total_principal_paid ?? 0,
+    // --- NEW INSTITUTIONAL METRICS ---
+    rtv: propertyValue > 0 ? (monthlyRent / propertyValue) * 100 : null,
+    debtYield: prop.loan_amount > 0 ? (noi / prop.loan_amount) * 100 : null,
+    appreciationYield: totalDeployed > 0 ? (annualAppreciation / totalDeployed) * 100 : null,
+    ltv: propertyValue > 0 ? ((metrics?.remaining_loan_balance ?? prop.loan_amount) / propertyValue) * 100 : null,
+    expenseIntensity: annualRent > 0 ? ((mgmtTTM + (metrics?.maintenance_pct_ttm ?? 0) * annualRent / 100) / annualRent) * 100 : null,
+    yoc: (prop.purchase_price + prop.closing_costs) > 0 ? (noi / (prop.purchase_price + prop.closing_costs)) * 100 : null,
+    equityCapture: (prop.purchase_price + prop.closing_costs) > 0 ? ((propertyValue - (prop.purchase_price + prop.closing_costs)) / (prop.purchase_price + prop.closing_costs)) * 100 : null,
+    adjustedCapRate: propertyValue > 0 ? ((noi - (annualRent * 0.05)) / propertyValue) * 100 : null,
+    taxShieldImpact: noi > 0 ? (((prop.purchase_price * 0.8) / 27.5) / noi) * 100 : null,
+    wealthVelocity: totalAnnualizedReturn, // Already calculates combined yield
+    economicVacancy: metrics?.vacancy_rate_pct ?? 0,
+    interestSensitivity: annualCF != null && annualCF !== 0 ? (Math.abs(prop.loan_amount * 0.01) / Math.abs(annualCF)) * 100 : null,
   }
 }
 

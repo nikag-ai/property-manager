@@ -177,6 +177,46 @@ export function useAutoPostRules(propertyId: string | null) {
   })
 }
 
+export function useDeleteAutoPostRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('auto_post_rules').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['auto-post-rules'] })
+    },
+  })
+}
+
+export function useAddAutoPostRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (rule: Omit<AutoPostRule, 'id' | 'created_at' | 'created_by'>) => {
+      const { error } = await supabase.from('auto_post_rules').insert(rule)
+      if (error) throw error
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: keys.autoPostRules(vars.property_id) })
+    },
+  })
+}
+
+export function useUpdateAutoPostRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string, patch: Partial<AutoPostRule> }) => {
+      const { error } = await supabase.from('auto_post_rules').update(patch).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: (_d, _vars) => {
+      // We don't have the property_id here easily, so we invalidate all rule queries
+      qc.invalidateQueries({ queryKey: ['auto-post-rules'] })
+    },
+  })
+}
+
 // ── TAGS ──────────────────────────────────────────────────────────────────────
 export function useTags(propertyId: string | null) {
   return useQuery({
