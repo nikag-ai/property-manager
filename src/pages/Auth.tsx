@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { Navigate } from 'react-router-dom'
 
 export default function Auth() {
+  const { session } = useAuth()
   const [email, setEmail] = useState('')
   const [sent, setSent]   = useState(false)
   const [error, setError] = useState('')
@@ -29,6 +32,10 @@ export default function Auth() {
     })
     setLoading(false)
     if (err) setError(err.message)
+  }
+
+  if (session) {
+    return <Navigate to="/" replace />
   }
 
   return (
