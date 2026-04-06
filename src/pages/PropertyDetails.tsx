@@ -2,8 +2,57 @@ import { useState } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
 import { useAmortization, useLeases, useUpdateAmortizationRow } from '../hooks/useData'
 import { formatCurrency, formatDate, formatPct } from '../lib/utils'
-import type { AmortizationRow } from '../lib/types'
+import type { AmortizationRow, Lease } from '../lib/types'
 import clsx from 'clsx'
+
+function buildTimeline(purchaseDateStr: string, leases: Lease[]) {
+  const purchaseDate = new Date(purchaseDateStr).getTime()
+  const sortedLeases = [...leases].sort((a, b) => new Date(a.lease_start).getTime() - new Date(b.lease_start).getTime())
+  
+  const todayMillis = new Date().getTime()
+  let maxDate = Math.max(todayMillis, purchaseDate)
+  if (sortedLeases.length > 0) {
+    const lastLeaseEnd = new Date(sortedLeases[sortedLeases.length - 1].lease_end).getTime()
+    if (lastLeaseEnd > maxDate) maxDate = lastLeaseEnd
+  }
+
+  const totalDuration = maxDate - purchaseDate;
+  if (totalDuration === 0) return { segments: [], maxDateStr: purchaseDateStr };
+
+  const segments: { type: 'vacant' | 'leased', label: string, startPct: number, widthPct: number }[] = []
+  let cursor = purchaseDate;
+
+  for (const lease of sortedLeases) {
+    const lStart = new Date(lease.lease_start).getTime()
+    const lEnd = new Date(lease.lease_end).getTime()
+
+    if (lStart > cursor) {
+      segments.push({
+        type: 'vacant', label: 'Vacant',
+        startPct: ((cursor - purchaseDate) / totalDuration) * 100,
+        widthPct: ((lStart - cursor) / totalDuration) * 100
+      })
+    }
+    
+    segments.push({
+      type: 'leased', label: 'Leased',
+      startPct: ((lStart - purchaseDate) / totalDuration) * 100,
+      widthPct: ((lEnd - lStart) / totalDuration) * 100
+    })
+
+    cursor = Math.max(cursor, lEnd)
+  }
+
+  if (maxDate > cursor) {
+    segments.push({
+        type: 'vacant', label: 'Vacant',
+        startPct: ((cursor - purchaseDate) / totalDuration) * 100,
+        widthPct: ((maxDate - cursor) / totalDuration) * 100
+    })
+  }
+
+  return { segments, maxDateStr: new Date(maxDate).toISOString().split('T')[0] };
+}
 
 // Inline editable cell
 function EditCell({ value, onSave, prefix = '' }: { value: number; onSave: (v: number) => void; prefix?: string }) {
@@ -103,6 +152,15 @@ export default function PropertyDetails() {
             </div>
           ))}
         </div>
+        
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <div className="form-label" style={{ marginBottom: 8 }}>External Listings</div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <a href="https://www.zillow.com/homedetails/864-Moray-Ln-Clarksville-TN-37043/456109539_zpid/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 2 }}>Zillow ↗</a>
+            <a href="https://www.redfin.com/TN/Clarksville/864-Moray-Ln-37043/home/197273821" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 2 }}>Redfin ↗</a>
+            <a href="https://www.realtor.com/realestateandhomes-detail/M9453539394" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue)', fontSize: '0.875rem', textDecoration: 'underline', textUnderlineOffset: 2 }}>Realtor.com ↗</a>
+          </div>
+        </div>
       </div>
 
       {/* Amortization table */}
@@ -178,6 +236,44 @@ export default function PropertyDetails() {
       {/* Lease history */}
       <div className="card">
         <h3 style={{ marginBottom: 18 }}>Lease History</h3>
+        
+        {prop && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 500 }}>
+              <span>Purchase: {formatDate(prop.purchase_date)}</span>
+              <span>{buildTimeline(prop.purchase_date, leases).maxDateStr === prop.purchase_date ? 'Today' : formatDate(buildTimeline(prop.purchase_date, leases).maxDateStr)}</span>
+            </div>
+            
+            <div style={{ display: 'flex', height: 28, borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--surface-3)', border: '1px solid var(--border)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)' }}>
+              {buildTimeline(prop.purchase_date, leases).segments.map((seg, i, arr) => (
+                <div 
+                  key={i} 
+                  style={{ 
+                    width: `${seg.widthPct}%`, 
+                    background: seg.type === 'leased' ? 'var(--blue)' : 'var(--yellow)',
+                    opacity: seg.type === 'leased' ? 0.8 : 0.6,
+                    borderRight: i < arr.length - 1 ? '1px solid var(--surface)' : 'none',
+                    transition: 'opacity 0.2s',
+                    cursor: 'help'
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = seg.type === 'leased' ? '0.8' : '0.6')}
+                  title={`${seg.label} (${seg.widthPct.toFixed(1)}% of timeline)`}
+                />
+              ))}
+            </div>
+            
+            <div style={{ display: 'flex', gap: 24, marginTop: 12, justifyContent: 'center' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                 <span style={{ width: 12, height: 12, background: 'var(--blue)', opacity: 0.8, borderRadius: 2 }}/> Leased
+               </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                 <span style={{ width: 12, height: 12, background: 'var(--yellow)', opacity: 0.6, borderRadius: 2 }}/> Vacant
+               </div>
+            </div>
+          </div>
+        )}
+
         {leases.length === 0 ? (
           <div className="empty-state" style={{ padding: '24px 0' }}><p>No leases on record.</p></div>
         ) : (

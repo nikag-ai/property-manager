@@ -1,5 +1,5 @@
 -- ============================================================
--- RentLedger Seed: 864 Moray Drive
+-- RentLedger Seed: 864 Moray Ln
 -- Generated from transaction image: Oct 2025 – Apr 2026
 -- ============================================================
 -- BEFORE RUNNING: Replace REPLACE_WITH_YOUR_AUTH_UUID below
@@ -32,7 +32,7 @@ insert into public.properties (
 values (
   gen_random_uuid(),
   current_setting('app.owner_id')::uuid,
-  '864 Moray Drive',
+  '864 Moray Ln',
   '2025-10-10',   -- purchase / closing date
   314000.00,
   219800.00,
@@ -71,7 +71,7 @@ from public.properties p,
   ('Other Income',            'income'),
   ('Other Expense',           'expense')
 ) as v(name, cat)
-where p.address = '864 Moray Drive'
+where p.address = '864 Moray Ln'
 on conflict (property_id, name) do nothing;
 
 -- ============================================================
@@ -80,20 +80,20 @@ on conflict (property_id, name) do nothing;
 --    First payment date = date_trunc('month','2025-10-10') + 1 month = 2025-11-01
 -- ============================================================
 select generate_amortization(id)
-from public.properties where address = '864 Moray Drive';
+from public.properties where address = '864 Moray Ln';
 
 -- Patch escrow to $247 on all rows, recompute total_payment
 update public.amortization_schedule
 set escrow        = 247.00,
     total_payment = principal + interest + 247.00
-where property_id = (select id from public.properties where address = '864 Moray Drive');
+where property_id = (select id from public.properties where address = '864 Moray Ln');
 
 -- ============================================================
 -- 4. Lease
 -- ============================================================
 insert into public.leases (property_id, tenant_name, lease_start, lease_end, monthly_rent, rent_due_day)
 select p.id, null, '2025-12-08', '2027-06-08', 1895.00, 1
-from public.properties p where p.address = '864 Moray Drive'
+from public.properties p where p.address = '864 Moray Ln'
 ;
 
 -- ============================================================
@@ -112,7 +112,7 @@ select
     {"label":"Escrow",    "source":"amortization.escrow"}]'::jsonb
 from public.properties p
 join public.tags t on t.property_id = p.id and t.name = 'Mortgage'
-where p.address = '864 Moray Drive';
+where p.address = '864 Moray Ln';
 
 -- ============================================================
 -- 6. Backfilled Transactions
@@ -132,70 +132,70 @@ insert into public.transactions (property_id, date, amount, tag_id, tag_name, no
 select p.id, '2025-10-10', -5000.00,
   (select id from public.tags where property_id = p.id and name = 'Closing Costs'),
   'Closing Costs', 'Advance Contract — Lennar', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Down Payment (equity outflow, not a P&L expense)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -94200.00,
   (select id from public.tags where property_id = p.id and name = 'Down Payment'),
   'Down Payment', 'Down payment at closing ($314k - $219.8k loan)', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- True closing costs (remainder of Lennar Closing Cost line: $95,951.64 - $94,200)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -1751.64,
   (select id from public.tags where property_id = p.id and name = 'Closing Costs'),
   'Closing Costs', 'Closing Cost — Lennar (title/fees portion)', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Bi-weekly landscaping
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-17', -70.00,
   (select id from public.tags where property_id = p.id and name = 'Maintenance'),
   'Maintenance', 'Bi-weekly landscaping — Marshall Reddick', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Marshall Reddick Advance (mgmt advance before tenant)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -500.00,
   (select id from public.tags where property_id = p.id and name = 'Management Fee'),
   'Management Fee', 'Marshall Reddick advance (pre-lease)', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Listing photos
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -245.00,
   (select id from public.tags where property_id = p.id and name = 'Leasing Fee'),
   'Leasing Fee', 'Listing photos — Marshall Reddick', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Third-party inspection
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -450.00,
   (select id from public.tags where property_id = p.id and name = 'Other Expense'),
   'Other Expense', 'Third party inspection — Marshall Reddick', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Water & Sewer (Oct 2025)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -131.14,
   (select id from public.tags where property_id = p.id and name = 'Utilities — Water/Sewer'),
   'Utilities — Water/Sewer', 'Water & Sewer 10/13/25–11/05/25', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Electricity (Oct)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-23', -67.58,
   (select id from public.tags where property_id = p.id and name = 'Utilities — Electricity'),
   'Utilities — Electricity', 'Electricity 10/13/25–10/23/25', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- HOA Annual (paid once in October, not monthly)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -542.49,
   (select id from public.tags where property_id = p.id and name = 'HOA'),
   'HOA', 'HOA Annual Dues — Byers & Harvey', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ── NOVEMBER 2025 ──────────────────────────────────────────
 -- Mortgage Payment #1
@@ -210,28 +210,28 @@ select
   'Mortgage', 'November 2025 Loan — Lennar | Pmt #1', true,
   (select id from public.amortization_schedule where property_id = p.id and payment_number = 1),
   '[{"label":"Principal","amount":317.27},{"label":"Interest","amount":730.84},{"label":"Escrow","amount":247.00}]'::jsonb
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Electricity (Oct 23 – Nov 21)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-11-21', -46.19,
   (select id from public.tags where property_id = p.id and name = 'Utilities — Electricity'),
   'Utilities — Electricity', 'Electricity 10/23/25–11/21/25', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Water & Sewer final bill (tenant takes over Dec 8)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-12-08', -31.14,
   (select id from public.tags where property_id = p.id and name = 'Utilities — Water/Sewer'),
   'Utilities — Water/Sewer', 'Water & Sewer final bill 11/05/25–12/08/25', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Electricity final bill (tenant takes over Dec 8)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-12-08', -84.52,
   (select id from public.tags where property_id = p.id and name = 'Utilities — Electricity'),
   'Utilities — Electricity', 'Electricity final bill 11/21/25–12/08/25', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ── DECEMBER 2025 ──────────────────────────────────────────
 -- Mortgage Payment #2
@@ -246,28 +246,28 @@ select
   'Mortgage', 'December 2025 Loan — Lennar | Pmt #2', true,
   (select id from public.amortization_schedule where property_id = p.id and payment_number = 2),
   '[{"label":"Principal","amount":318.33},{"label":"Interest","amount":729.78},{"label":"Escrow","amount":247.00}]'::jsonb
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Leasing fee (one-time, tenant placed Dec 8)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-12-08', -947.50,
   (select id from public.tags where property_id = p.id and name = 'Leasing Fee'),
   'Leasing Fee', 'Tenant placement fee — Marshall Reddick', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Management fee Dec ($170.55 = 9% × $1,895 — full month, confirmed by amount)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-12-31', -170.55,
   (select id from public.tags where property_id = p.id and name = 'Management Fee'),
   'Management Fee', 'Management fee Dec 2025', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Rent Income Dec (full month — mgmt fee = 9% × $1,895 confirms full collection)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-12-08', 1895.00,
   (select id from public.tags where property_id = p.id and name = 'Rent Income'),
   'Rent Income', 'Rent — Dec 2025 (lease start date)', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ── JANUARY 2026 ───────────────────────────────────────────
 -- Mortgage Payment #3
@@ -282,21 +282,21 @@ select
   'Mortgage', 'January 2026 Loan — Lennar | Pmt #3', true,
   (select id from public.amortization_schedule where property_id = p.id and payment_number = 3),
   '[{"label":"Principal","amount":319.39},{"label":"Interest","amount":728.72},{"label":"Escrow","amount":247.00}]'::jsonb
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Management fee Jan ($136.44 — note: less than usual; ~7.2% of $1,895 or partial month)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-01-31', -136.44,
   (select id from public.tags where property_id = p.id and name = 'Management Fee'),
   'Management Fee', 'Management fee Jan 2026 (actual per statement)', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Rent Income Jan
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-01-01', 1895.00,
   (select id from public.tags where property_id = p.id and name = 'Rent Income'),
   'Rent Income', 'Rent — Jan 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ── FEBRUARY 2026 ──────────────────────────────────────────
 -- Mortgage Payment #4
@@ -311,28 +311,28 @@ select
   'Mortgage', 'February 2026 Loan — Lennar | Pmt #4', true,
   (select id from public.amortization_schedule where property_id = p.id and payment_number = 4),
   '[{"label":"Principal","amount":320.45},{"label":"Interest","amount":727.66},{"label":"Escrow","amount":247.00}]'::jsonb
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Management fee Feb
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-02-28', -170.55,
   (select id from public.tags where property_id = p.id and name = 'Management Fee'),
   'Management Fee', 'Management fee Feb 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Trash can installation (maintenance)
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-02-01', -380.00,
   (select id from public.tags where property_id = p.id and name = 'Maintenance'),
   'Maintenance', 'Trash can installation — Marshall Reddick', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Rent Income Feb
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-02-01', 1895.00,
   (select id from public.tags where property_id = p.id and name = 'Rent Income'),
   'Rent Income', 'Rent — Feb 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ── MARCH 2026 ─────────────────────────────────────────────
 -- Mortgage Payment #5
@@ -347,21 +347,21 @@ select
   'Mortgage', 'March 2026 Loan — Lennar | Pmt #5', true,
   (select id from public.amortization_schedule where property_id = p.id and payment_number = 5),
   '[{"label":"Principal","amount":321.51},{"label":"Interest","amount":726.60},{"label":"Escrow","amount":247.00}]'::jsonb
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Management fee Mar
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-03-31', -170.55,
   (select id from public.tags where property_id = p.id and name = 'Management Fee'),
   'Management Fee', 'Management fee Mar 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Rent Income Mar
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-03-01', 1895.00,
   (select id from public.tags where property_id = p.id and name = 'Rent Income'),
   'Rent Income', 'Rent — Mar 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ── APRIL 2026 ─────────────────────────────────────────────
 -- Mortgage Payment #6
@@ -376,28 +376,28 @@ select
   'Mortgage', 'April 2026 Loan — Lennar | Pmt #6', true,
   (select id from public.amortization_schedule where property_id = p.id and payment_number = 6),
   '[{"label":"Principal","amount":322.59},{"label":"Interest","amount":725.52},{"label":"Escrow","amount":247.00}]'::jsonb
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Management fee Apr
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-04-30', -170.55,
   (select id from public.tags where property_id = p.id and name = 'Management Fee'),
   'Management Fee', 'Management fee Apr 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- Rent Income Apr
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2026-04-01', 1895.00,
   (select id from public.tags where property_id = p.id and name = 'Rent Income'),
   'Rent Income', 'Rent — Apr 2026', false
-from public.properties p where p.address = '864 Moray Drive';
+from public.properties p where p.address = '864 Moray Ln';
 
 -- ============================================================
 -- 7. Mark paid amortization rows as posted (Pmt #1–6)
 -- ============================================================
 update public.amortization_schedule
 set is_posted = true, posted_at = now()
-where property_id = (select id from public.properties where address = '864 Moray Drive')
+where property_id = (select id from public.properties where address = '864 Moray Ln')
   and payment_number between 1 and 6;
 
 -- ============================================================
@@ -409,7 +409,7 @@ select
   sum(case when amount < 0 then amount else 0 end)  as expenses,
   sum(amount)                                        as net
 from public.transactions
-where property_id = (select id from public.properties where address = '864 Moray Drive')
+where property_id = (select id from public.properties where address = '864 Moray Ln')
   and tag_name != 'Down Payment'   -- exclude equity outflow from P&L
 group by date_trunc('month', date)
 order by date_trunc('month', date);
