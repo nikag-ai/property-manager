@@ -120,6 +120,104 @@ export default function IntelligenceDeepDive() {
             { label: 'Years 25-30 (Payoff)', value: 'Sub 0.5 : 1' },
           ]
         }
+      case 'total-return':
+        return {
+          title: 'Total Annualized Return',
+          value: calc.totalAnnualizedReturn != null ? formatPct(calc.totalAnnualizedReturn) : '—',
+          color: 'var(--purple)',
+          formula: '(Annual Cash Flow + Annual Principal Paydown + Annual Appreciation) ÷ Total Cash Deployed',
+          math: `(${formatCurrency(calc.annualCF ?? 0)} + ${formatCurrency(calc.annualPrincipal ?? 0)} + ${formatCurrency(calc.annualAppreciation ?? 0)}) ÷ ${formatCurrency(calc.totalDeployed)} = ${calc.totalAnnualizedReturn ? (calc.totalAnnualizedReturn/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Annualized Cash Flow (${formatCurrency(calc.annualCF ?? 0)}): Pure operational profit taking into account all expenses and debt service.`,
+            `Annual Principal Paydown (${formatCurrency(calc.annualPrincipal ?? 0)}): The amount of the mortgage loan that the tenant paid down for you this year.`,
+            `Annual Appreciation (${formatCurrency(calc.annualAppreciation ?? 0)}): The estimated growth in property value annualized over the hold period.`,
+            `Total Cash Deployed (${formatCurrency(calc.totalDeployed)}): The denominator. Down payment + closing costs.`
+          ],
+          meaning: "Total Annualized Return acts like a simplified IRR (Internal Rate of Return). It takes all three major wealth generation distinct vectors of real estate—cash flow, mortgage paydown, and equity appreciation—and aggregates them into one powerful percentage. This lets you compare your entire real estate engine directly against the S&P 500 or bond yields.",
+          benchmarks: [
+            { label: 'S&P 500 Average', value: '7.0% – 10.0%' },
+            { label: 'Healthy Real Estate Total Return', value: '12.0% – 18.0%' },
+            { label: 'Exceptional Performers', value: '20.0%+' },
+          ]
+        }
+      case 'roe':
+        return {
+          title: 'Return on Equity (ROE)',
+          value: calc.roe != null ? formatPct(calc.roe) : '—',
+          color: 'var(--yellow)',
+          formula: 'Annualized Cash Flow ÷ Current Capitalized Net Equity',
+          math: `${formatCurrency(calc.annualCF ?? 0)} ÷ ${formatCurrency(calc.capitalizedNetEq ?? 0)} = ${calc.roe ? (calc.roe/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Annualized Cash Flow (${formatCurrency(calc.annualCF ?? 0)}): Your net operating P&L extended to a 12-month period based on historicals.`,
+            `Capitalized Net Equity (${formatCurrency(calc.capitalizedNetEq ?? 0)}): The exact dollar amount of cash you would walk away with if you sold the property tomorrow (Value - Remaining Debt - Estimated 8% Selling Costs).`
+          ],
+          meaning: "ROE is an extremely advanced metric that helps you answer: 'Should I sell or refinance?' While your initial Cash-on-Cash return might have been 15%, as your equity grows over the years through appreciation and loan paydown, your ROE will drop. If your ROE drops below 4%, it means you have hundreds of thousands of dollars of equity trapped in the house generating very little cash, signaling it might be time for a cash-out refinance to buy another property.",
+          benchmarks: [
+            { label: 'Highly Efficient Equity (Recent Buy)', value: '10.0% – 15.0%' },
+            { label: 'Maturing Investment', value: '5.0% – 8.0%' },
+            { label: 'Trapped Dead Equity (Consider Refi/Sell)', value: 'Below 4.0%' },
+          ]
+        }
+      case 'grm':
+        return {
+          title: 'Gross Yield (GRM Inverse)',
+          value: calc.grm != null ? formatPct(calc.grm) : '—',
+          color: 'var(--pink)',
+          formula: 'Annual Gross Rent ÷ Current Property Value',
+          math: `${formatCurrency(calc.annualRent ?? 0)} ÷ ${formatCurrency(prop.current_value ?? prop.purchase_price)} = ${calc.grm ? (calc.grm/100).toFixed(4) : '—'}`,
+          meaning: "Gross Yield (which is the inverse of the Gross Rent Multiplier) is the simplest, most primitive real estate metric. It completely ignores expenses, taxes, and debt. It exists purely to give you a 5-second sanity check on whether a property's asking price makes sense relative to the market rents it can command.",
+          benchmarks: [
+            { label: 'The 1% Rule (Monthly Rent = 1% Value)', value: '12.0% Annual' },
+            { label: 'Standard B/C Class Target', value: '8.0% – 10.0%' },
+            { label: 'Expensive Coastal Markets', value: '4.0% – 6.0%' },
+          ]
+        }
+      case 'breakeven-occupancy':
+        return {
+          title: 'Break-Even Occupancy Ratio',
+          value: calc.breakEvenOccupancy != null ? formatPct(calc.breakEvenOccupancy) : '—',
+          color: 'var(--teal)',
+          formula: '(Annual Operating Expenses + Annual Debt Service) ÷ Gross Potential Rent',
+          math: `(${formatCurrency(calc.annualOpExp ?? 0)} + ${formatCurrency(calc.annualDebtService ?? 0)}) ÷ ${formatCurrency(calc.annualRent ?? 0)} = ${calc.breakEvenOccupancy ? (calc.breakEvenOccupancy/100).toFixed(4) : '—'}`,
+          mathBreakdown: [
+            `Total Hard Costs (${formatCurrency((calc.annualOpExp ?? 0) + (calc.annualDebtService ?? 0))}): Your mortgage, taxes, insurance, HOA, and base-line operating expenses combined.`,
+            `Gross Rent (${formatCurrency(calc.annualRent ?? 0)}): The maximum revenue you make if fully occupied 100% of the year.`
+          ],
+          meaning: "This tells you exactly how bulletproof your investment is against vacancies. If your Break-Even Occupancy is 70%, that means 30% of your units (or 3.6 months out of the year for a single family house) can sit utterly empty, and you STILL will not have to pull money out of your own pocket to pay the bank.",
+          benchmarks: [
+            { label: 'Bulletproof (Extremely Safe)', value: 'Below 65%' },
+            { label: 'Standard Safe Target', value: '70% – 75%' },
+            { label: 'Risky / Thin Margins', value: 'Above 85%' },
+          ]
+        }
+      case 'oer':
+        return {
+          title: 'Operating Expense Ratio (OER)',
+          value: calc.oer != null ? formatPct(calc.oer) : '—',
+          color: 'var(--red)',
+          formula: 'Annual Operating Expenses ÷ Gross Operating Income',
+          math: `${formatCurrency(calc.annualOpExp ?? 0)} ÷ ${formatCurrency(calc.annualRent ?? 0)} = ${calc.oer ? (calc.oer/100).toFixed(4) : '—'}`,
+          meaning: "OER measures how lean your property runs. It shows what percentage of your rental income is vaporized by taxes, insurance, maintenance, property management, and HOAs before you even reach the mortgage. Because it excludes mortgage payments, it's a pure indicator of management efficiency.",
+          benchmarks: [
+            { label: 'Extremely Lean (Self-Managed / No HOA)', value: '25% – 35%' },
+            { label: 'Industry Standard "50% Rule"', value: '45% – 50%' },
+            { label: 'Very Heavy (High Taxes / Luxury HOA)', value: '55%+' },
+          ]
+        }
+      case 'principal-yield':
+        return {
+          title: 'Principal Paydown Yield',
+          value: calc.principalPaydownYield != null ? formatPct(calc.principalPaydownYield) : '—',
+          color: 'var(--green)',
+          formula: 'Annual Principal Paid ÷ Total Cash Deployed',
+          math: `${formatCurrency(calc.annualPrincipal ?? 0)} ÷ ${formatCurrency(calc.totalDeployed)} = ${calc.principalPaydownYield ? (calc.principalPaydownYield/100).toFixed(4) : '—'}`,
+          meaning: "Every time the tenant pays their rent, a portion of it goes directly into your bank's mortgage portal, reducing the amount you owe. This is literally an invisible forced-savings account. Principal Paydown Yield extracts that exact dollar amount and treats it as a percentage return on your initial down payment, proving that real estate is making you richer even in months when cash flow is zero.",
+          benchmarks: [
+            { label: 'Years 1-5 of a 30yr mortgage', value: '1.5% – 2.5% yield on down payment' },
+            { label: 'Years 15-20 of a 30yr mortgage', value: '3.5% – 5.0% yield on down payment' },
+            { label: '15-year mortgage', value: 'Highly accelerated (6.0%+)' },
+          ]
+        }
       default:
         return null
     }

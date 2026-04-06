@@ -9,6 +9,8 @@ import MonthlyBreakdown from './pages/MonthlyBreakdown'
 import QuickAdd       from './pages/QuickAdd'
 import PropertyDetails from './pages/PropertyDetails'
 import IntelligenceDeepDive from './pages/IntelligenceDeepDive'
+import IntelligenceHub from './pages/IntelligenceHub'
+import Expenses from './pages/Expenses'
 
 export default function App() {
   return (
@@ -20,8 +22,10 @@ export default function App() {
             <Route element={<AuthGate><AppLayout /></AuthGate>}>
               <Route index element={<Overview />} />
               <Route path="monthly"  element={<MonthlyBreakdown />} />
+              <Route path="expenses" element={<Expenses />} />
               <Route path="add"      element={<QuickAdd />} />
               <Route path="property" element={<PropertyDetails />} />
+              <Route path="intelligence/all" element={<IntelligenceHub />} />
               <Route path="intelligence/:metric" element={<IntelligenceDeepDive />} />
             </Route>
           </Routes>

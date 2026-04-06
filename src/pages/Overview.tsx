@@ -90,8 +90,10 @@ export default function Overview() {
           sub="Current value − remaining loan balance" />
         <KpiCard label="Monthly Cash Flow" value={metrics?.monthly_cash_flow} accent="var(--green)" isLoading={isLoading}
           sub="This month: rent − (interest + escrow + expenses)" />
-        <KpiCard label="Cumulative CF" value={metrics?.cumulative_cash_flow} accent="var(--teal)" isLoading={isLoading}
-          sub="All-time operational P&L (excl. closing costs & principal)" />
+        <Link to="/monthly?view=table" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <KpiCard label="Cumulative CF" value={metrics?.cumulative_cash_flow} accent="var(--teal)" isLoading={isLoading}
+            sub="All-time operational P&L (excl. closing costs & principal)" />
+        </Link>
         <KpiCard label="Vacancy Rate" value={metrics?.vacancy_rate_pct} accent="var(--yellow)" format="pct" isLoading={isLoading}
           sub="% of days vacant since purchase" />
       </KpiRow>
@@ -124,53 +126,37 @@ export default function Overview() {
 
       {/* ── Investment Intelligence ── */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <div className="section-header" style={{ marginBottom: 16 }}>
-          <h3 className="section-title">Investment Intelligence</h3>
-          <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>Annualized estimates</span>
+        <div className="section-header" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 className="section-title" style={{ display: 'inline-block', marginRight: 8 }}>Investment Intelligence</h3>
+            <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>Health Snapshot</span>
+          </div>
+          <Link to="/intelligence/all" className="btn btn-secondary btn-sm">
+            View all 13 metrics →
+          </Link>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+          <MetricTile
+            label="Total Annualized Return"
+            linkTo="/intelligence/total-return"
+            value={calc?.totalAnnualizedReturn != null ? `${formatPct(calc.totalAnnualizedReturn)}` : '—'}
+            color="var(--purple)"
+            sub="Cash flow + principal + appreciation"
+            tooltip="Sum of Annual Cash Flow + Principal Paydown + Appreciation divided by your total cash deployed. This is the true metric of your wealth growth." />
           <MetricTile
             label="Cash-on-Cash Return"
             linkTo="/intelligence/coc"
             value={calc?.cocReturn != null ? `${calc.cocReturn.toFixed(1)}%` : '—'}
             color={calc?.cocReturn != null && calc.cocReturn > 0 ? 'var(--green)' : 'var(--red)'}
             sub={`${formatCurrency(calc?.annualCF ?? 0)}/yr on ${formatCurrency(calc?.totalDeployed ?? 0)} deployed`}
-            tooltip="Annualized operational cash flow ÷ total cash invested (down payment + closing costs). Excludes principal paydown and appreciation." />
-          <MetricTile
-            label="Cap Rate"
-            linkTo="/intelligence/cap-rate"
-            value={calc?.capRate != null ? formatPct(calc.capRate) : '—'}
-            color="var(--blue)"
-            sub={`NOI ${formatCurrency(calc?.noi ?? 0)}/yr ÷ ${formatCurrency(prop.current_value ?? prop.purchase_price)}`}
-            tooltip="Annual Net Operating Income ÷ current property value. Measures yield independent of financing. Higher = better. Excludes mortgage payments." />
+            tooltip="Annualized operational cash flow ÷ total cash invested. Excludes principal paydown and appreciation." />
           <MetricTile
             label="DSCR"
             linkTo="/intelligence/dscr"
             value={calc?.dscr != null ? calc.dscr.toFixed(2) : '—'}
-            color={calc?.dscr != null && calc.dscr >= 1 ? 'var(--green)' : 'var(--red)'}
+            color={calc?.dscr != null && calc.dscr >= 1.25 ? 'var(--green)' : 'var(--orange)'}
             sub={`${calc?.dscr != null && calc.dscr >= 1.25 ? '✓ Bankable' : calc?.dscr != null && calc.dscr >= 1 ? 'Marginal' : '✗ Below 1.0'}`}
-            tooltip="Debt Service Coverage Ratio = Annual NOI ÷ Annual mortgage payments. >1.25 is what lenders want. <1.0 means rent doesn't fully cover the mortgage." />
-          <MetricTile
-            label="Equity Multiple"
-            linkTo="/intelligence/equity-multiple"
-            value={calc?.equityMultiple != null ? `${calc.equityMultiple.toFixed(2)}×` : '—'}
-            color="var(--purple)"
-            sub="(Net equity + invested) ÷ invested"
-            tooltip="How much your invested capital has grown. 1.0x = break-even. Calculated as (net equity + cash deployed) ÷ cash deployed." />
-          <MetricTile
-            label="Total Cash Deployed"
-            linkTo="/intelligence/cash-deployed"
-            value={calc != null ? formatCurrency(calc.totalDeployed) : '—'}
-            color="var(--yellow)"
-            sub={`$${((calc?.downPayment ?? 0)/1000).toFixed(0)}k down + $${((prop.closing_costs)/1000).toFixed(1)}k closing`}
-            tooltip="All cash you paid at closing: down payment + closing costs. This is real money you put in that needs to be recovered before you profit." />
-          <MetricTile
-            label="Interest:Principal Ratio"
-            linkTo="/intelligence/interest-ratio"
-            value={calc?.interestRatio != null ? `${calc.interestRatio.toFixed(1)}:1` : '—'}
-            color="var(--orange)"
-            sub={`$${(metrics?.total_interest_paid ?? 0).toFixed(0)} interest vs $${(metrics?.total_principal_paid ?? 0).toFixed(0)} principal`}
-            tooltip="How much of your mortgage payments have gone to interest vs actually paying down the loan. Early in a loan this is heavily weighted toward interest." />
+            tooltip="Debt Service Coverage Ratio = Annual NOI ÷ Annual mortgage payments." />
         </div>
       </div>
 
