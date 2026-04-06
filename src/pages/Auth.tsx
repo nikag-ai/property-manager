@@ -95,11 +95,9 @@ export default function Auth() {
                   {loading ? 'Sending…' : 'Send magic link →'}
                 </button>
 
-                {import.meta.env.DEV && (
-                  <button type="button" className="btn btn-secondary" onClick={handleDevLogin} disabled={loading}>
-                    🛠 Local Dev Login (Bypass Email)
-                  </button>
-                )}
+                <button type="button" className="btn btn-secondary" onClick={handleDevLogin} disabled={loading}>
+                  🛠 Password Login (Bypass Email)
+                </button>
               </form>
             </>
           )}
