@@ -77,6 +77,12 @@ export function computeInvestmentIntelligence(
     ? ((annualCF + annualPrincipal + annualAppreciation) / totalDeployed) * 100 
     : null
 
+  // --- POWER-UP: RENT ALLOCATION (Monthly) ---
+  const calcInterest = (metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) : (monthlyMortgage * 0.7))
+  const calcPrincipal = (metrics ? (metrics.total_principal_paid / Math.max(monthsOwned, 1)) : (monthlyMortgage * 0.3))
+  const calcTaxesIns = (prop.hoa_amount ?? 0)
+  const calcOpEx = (mgmtTTM / Math.max(monthsOwned, 1)) + ((metrics?.maintenance_pct_ttm ?? 0) * monthlyRent / 100)
+
   return {
     downPayment,
     totalDeployed,
@@ -145,11 +151,11 @@ export function computeInvestmentIntelligence(
     wealthTotal: propertyValue - (metrics?.remaining_loan_balance ?? prop.loan_amount),
 
     // --- POWER-UP: RENT ALLOCATION (Monthly) ---
-    allocInterest: (metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) : (monthlyMortgage * 0.7)), // Interest approx
-    allocPrincipal: (metrics ? (metrics.total_principal_paid / Math.max(monthsOwned, 1)) : (monthlyMortgage * 0.3)),
-    allocTaxesIns: (prop.hoa_amount ?? 0),
-    allocOpEx: (mgmtTTM / Math.max(monthsOwned, 1)) + ((metrics?.maintenance_pct_ttm ?? 0) * monthlyRent / 100),
-    allocNetCF: monthlyRent - (monthlyMortgage + (prop.hoa_amount ?? 0) + (mgmtTTM / Math.max(monthsOwned, 1)) + ((metrics?.maintenance_pct_ttm ?? 0) * monthlyRent / 100)),
+    allocInterest: calcInterest,
+    allocPrincipal: calcPrincipal,
+    allocTaxesIns: calcTaxesIns,
+    allocOpEx: calcOpEx,
+    allocNetCF: monthlyRent - calcInterest - calcPrincipal - calcTaxesIns - calcOpEx,
 
     // --- POWER-UP: ROBUST PROJECTIONS (30yr) ---
     wealthProjection: Array.from({ length: 31 }).map((_, yearIndex) => {

@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, Label } from 'recharts'
 import { formatCurrency } from '../../lib/utils'
 
 interface RentBreakdownProps {
@@ -22,8 +22,6 @@ export function RentBreakdownChart({ data, onSegmentClick }: RentBreakdownProps)
     { name: 'Net Cash Flow', value: Math.max(0, data.net), color: 'var(--green)' }
   ]
 
-  const total = chartData.reduce((sum, item) => sum + item.value, 0)
-
   return (
     <div style={{ position: 'relative', width: '100%', height: 320, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <ResponsiveContainer>
@@ -32,8 +30,8 @@ export function RentBreakdownChart({ data, onSegmentClick }: RentBreakdownProps)
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={80}
+            innerRadius={65}
+            outerRadius={85}
             paddingAngle={5}
             dataKey="value"
             onClick={(entry) => {
@@ -43,28 +41,26 @@ export function RentBreakdownChart({ data, onSegmentClick }: RentBreakdownProps)
             }}
           >
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+              <Cell key={`cell-${index}`} fill={entry.color} style={{ cursor: 'pointer', outline: 'none' }} />
             ))}
+            <Label content={({ viewBox }: any) => {
+              const { cx, cy } = viewBox;
+              return (
+                <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
+                  <tspan x={cx} y={cy - 10} fontSize="0.75rem" fill="var(--text-muted)">Total Rent</tspan>
+                  <tspan x={cx} y={cy + 15} fontSize="1.25rem" fontWeight="800" fill="var(--text)">{formatCurrency(data.total)}</tspan>
+                </text>
+              );
+            }} position="center" />
           </Pie>
           <Tooltip 
             formatter={(val: any, name: any) => [formatCurrency(Number(val)), String(name)]}
             contentStyle={{ borderRadius: 'var(--radius-md)', border: 'none', boxShadow: 'var(--shadow-lg)', background: 'var(--surface-1)', color: 'var(--text)' }}
+            itemStyle={{ color: 'var(--text)' }}
           />
           <Legend layout="vertical" align="right" verticalAlign="middle" />
         </PieChart>
       </ResponsiveContainer>
-      
-      <div style={{ 
-        position: 'absolute', 
-        top: '50%', 
-        left: 'calc(50% - 60px)', // Offset left to center within the pie rather than the whole div 
-        transform: 'translate(-50%, -50%)', 
-        textAlign: 'center',
-        pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total Rent</div>
-        <div style={{ fontSize: '1.25rem', fontWeight: 800 }}>{formatCurrency(total)}</div>
-      </div>
     </div>
   )
 }
