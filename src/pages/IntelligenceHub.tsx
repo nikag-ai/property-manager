@@ -399,7 +399,7 @@ export default function IntelligenceHub() {
         dscr: calc.dscr,
         ltv: calc.ltv,
         capRate: calc.capRate,
-        maintPct: calc.economicVacancy, // Using vacancy as proxy for now or maintenance_ttm if available
+        maintPct: metrics?.maintenance_pct_ttm ?? 0,
         annualCF: calc.annualCF,
         equityAcc: calc.equityAccRate,
         refiEquity: calc.refiEquity

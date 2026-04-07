@@ -43,15 +43,18 @@ export function RentBreakdownChart({ data, onSegmentClick }: RentBreakdownProps)
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} style={{ cursor: 'pointer', outline: 'none' }} />
             ))}
-            <Label content={({ viewBox }: any) => {
-              const { cx, cy } = viewBox;
-              return (
-                <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
-                  <tspan x={cx} y={cy - 10} fontSize="0.75rem" fill="var(--text-muted)">Total Rent</tspan>
-                  <tspan x={cx} y={cy + 15} fontSize="1.25rem" fontWeight="800" fill="var(--text)">{formatCurrency(data.total)}</tspan>
-                </text>
-              );
-            }} position="center" />
+            <Label
+              value="Total Rent"
+              position="center"
+              dy={-10}
+              style={{ fill: 'var(--text-muted)', fontSize: '0.75rem' }}
+            />
+            <Label
+              value={formatCurrency(data.total)}
+              position="center"
+              dy={15}
+              style={{ fill: 'var(--text)', fontSize: '1.25rem', fontWeight: 800 }}
+            />
           </Pie>
           <Tooltip 
             formatter={(val: any, name: any) => [formatCurrency(Number(val)), String(name)]}

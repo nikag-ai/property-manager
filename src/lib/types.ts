@@ -122,6 +122,7 @@ export interface MonthlySummary {
 export interface TransactionFilters {
   month?: string       // 'YYYY-MM'
   tag_name?: string
+  tags?: string[]      // Support multiple tags
   date_from?: string
   date_to?: string
   search?: string

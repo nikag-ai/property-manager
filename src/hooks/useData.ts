@@ -59,6 +59,7 @@ export function useTransactions(propertyId: string | null, filters: TransactionF
       if (filters.date_from) q = q.gte('date', filters.date_from)
       if (filters.date_to)   q = q.lte('date', filters.date_to)
       if (filters.tag_name)  q = q.eq('tag_name', filters.tag_name)
+      if (filters.tags && filters.tags.length > 0) q = q.in('tag_name', filters.tags)
       if (filters.search)    q = q.ilike('notes', `%${filters.search}%`)
 
       const { data, error } = await q

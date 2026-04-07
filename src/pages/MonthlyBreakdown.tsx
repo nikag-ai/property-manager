@@ -20,16 +20,27 @@ export default function MonthlyBreakdown() {
 
   const initView  = (searchParams.get('view') as 'chart' | 'ledger' | 'table') || 'table'
   const initMonth = searchParams.get('month') ?? ''
+  const initTags  = searchParams.getAll('tag')
 
   const [viewMode, setViewMode] = useState<'chart' | 'ledger' | 'table'>(initView)
-  const [filters, setFilters]   = useState<TransactionFilters>({ month: initMonth || undefined })
+  const [filters, setFilters]   = useState<TransactionFilters>({ 
+    month: initMonth || undefined,
+    tags: initTags.length > 0 ? initTags : undefined
+  })
 
   // Sync URL → state when navigating here from chart click
   useEffect(() => {
     const m = searchParams.get('month')
     const v = searchParams.get('view')
+    const urlTags = searchParams.getAll('tag')
+    
     if (v === 'ledger' || v === 'table' || v === 'chart') setViewMode(v as 'chart'|'ledger'|'table')
-    if (m) setFilters(f => ({ ...f, month: m }))
+    
+    setFilters(f => ({ 
+      ...f, 
+      month: m || undefined,
+      tags: urlTags.length > 0 ? urlTags : undefined
+    }))
   }, [searchParams])
 
   const { data: monthlySummary = [], isLoading: chartLoading } = useMonthlySummary(propId)
