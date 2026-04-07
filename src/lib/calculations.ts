@@ -137,6 +137,40 @@ export function computeInvestmentIntelligence(
     taxShieldImpact: annualRent > 0 ? ((((prop.purchase_price * 0.8) / 27.5) + (metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) * 12 : 0) + annualOpExp) / annualRent) * 100 : null,
     annualInterest: metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) * 12 : 0,
     annualDepreciation: (prop.purchase_price * 0.8) / 27.5,
+
+    // --- POWER-UP: WEALTH COMPOSITION ---
+    wealthDownpayment: downPayment,
+    wealthPrincipal: metrics?.total_principal_paid ?? 0,
+    wealthAppreciation: propertyValue - prop.purchase_price,
+    wealthTotal: propertyValue - (metrics?.remaining_loan_balance ?? prop.loan_amount),
+
+    // --- POWER-UP: RENT ALLOCATION (Monthly) ---
+    allocInterest: (metrics ? (metrics.total_interest_paid / Math.max(monthsOwned, 1)) : (monthlyMortgage * 0.7)), // Interest approx
+    allocPrincipal: (metrics ? (metrics.total_principal_paid / Math.max(monthsOwned, 1)) : (monthlyMortgage * 0.3)),
+    allocTaxesIns: (prop.hoa_amount ?? 0),
+    allocOpEx: (mgmtTTM / Math.max(monthsOwned, 1)) + ((metrics?.maintenance_pct_ttm ?? 0) * monthlyRent / 100),
+    allocNetCF: monthlyRent - (monthlyMortgage + (prop.hoa_amount ?? 0) + (mgmtTTM / Math.max(monthsOwned, 1)) + ((metrics?.maintenance_pct_ttm ?? 0) * monthlyRent / 100)),
+
+    // --- POWER-UP: ROBUST PROJECTIONS (30yr) ---
+    wealthProjection: Array.from({ length: 31 }).map((_, yearIndex) => {
+      // Base Appreciation rate 3%
+      const projectedValue = propertyValue * Math.pow(1.03, yearIndex)
+      
+      // Amortization Approximation: Remaining balance decellerates linearly for now (could be an exact amort curve later)
+      // Assuming a 30-year loan, every year reduces balance by increasing amounts (roughly modeled)
+      const bal = metrics?.remaining_loan_balance ?? prop.loan_amount
+      const remainingTerm = 30 - (monthsOwned / 12)
+      const amortPace = bal / Math.max(1, remainingTerm) // strict linear for visualizing
+      
+      const projectedLoan = Math.max(0, bal - (amortPace * yearIndex))
+      
+      return {
+        year: yearIndex,
+        downpayment: downPayment,
+        principal: Math.max(0, prop.purchase_price - downPayment - projectedLoan), // Total Principal Paid into property value
+        appreciation: projectedValue - prop.purchase_price
+      }
+    })
   }
 }
 

@@ -5,6 +5,9 @@ import { computeInvestmentIntelligence } from '../lib/calculations'
 import { formatCurrency, formatPct } from '../lib/utils'
 import { Link, useNavigate } from 'react-router-dom'
 import { InfoTooltip } from '../components/common/InfoTooltip'
+import { WealthCompositionChart } from '../components/charts/WealthCompositionChart'
+import { RentBreakdownChart } from '../components/charts/RentBreakdownChart'
+import { AdvisoryBoard } from '../components/intelligence/AdvisoryBoard'
 
 function MetricTile({ label, value, sub, color, tooltip, linkTo }: {
   label: string; value: string; sub?: string; color?: string; tooltip?: string; linkTo?: string
@@ -388,6 +391,54 @@ export default function IntelligenceHub() {
               <button className="btn btn-outline btn-sm" onClick={() => { setSimRent(''); setSimValue(''); setSimOpEx('') }}>Reset Simulation</button>
             </div>
           )}
+        </div>
+      </div>
+
+      <h3 style={{ fontSize: '1.2rem', marginBottom: 20 }}>Advisory & Insights</h3>
+      <AdvisoryBoard data={{
+        dscr: calc.dscr,
+        ltv: calc.ltv,
+        capRate: calc.capRate,
+        maintPct: calc.economicVacancy, // Using vacancy as proxy for now or maintenance_ttm if available
+        annualCF: calc.annualCF,
+        equityAcc: calc.equityAccRate,
+        refiEquity: calc.refiEquity
+      }} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 32, marginBottom: 56 }}>
+        <div className="card">
+          <h3 style={{ fontSize: '1rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            📂 Wealth Composition & Projections
+            <InfoTooltip content="Visualize how your equity is split between original cash, principal paid, and market appreciation, with 30-year projections." />
+          </h3>
+          <WealthCompositionChart data={{ timeline: calc.wealthProjection }} />
+        </div>
+
+        <div className="card">
+          <h3 style={{ fontSize: '1rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            💸 Monthly Rent Allocation
+            <InfoTooltip content="See exactly where every dollar of your rent goes. Click segments to jump to the ledger." />
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>*Interactive: Click a segment to filter ledger</p>
+          <div style={{ cursor: 'pointer' }}>
+            <RentBreakdownChart 
+              data={{
+                interest: calc.allocInterest,
+                principal: calc.allocPrincipal,
+                taxes: calc.allocTaxesIns,
+                opex: calc.allocOpEx,
+                net: calc.allocNetCF,
+                total: calc.monthlyRent
+              }} 
+              onSegmentClick={(segmentName) => {
+                let tagList = ''
+                if (segmentName.includes('Interest') || segmentName.includes('Principal')) tagList = '&tag=Mortgage'
+                if (segmentName.includes('OpEx')) tagList = '&tag=Management&tag=Maintenance'
+                if (segmentName.includes('Taxes')) tagList = '&tag=HOA&tag=Tax'
+                navigate(`/monthly?view=ledger${tagList}`)
+              }}
+            />
+          </div>
         </div>
       </div>
 
