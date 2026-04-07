@@ -233,6 +233,16 @@ export default function MonthlyBreakdown() {
                     <button onClick={() => setFilters(f => ({ ...f, tag_name: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
                   </div>
                 )}
+                {filters.tags?.map(tag => (
+                  <div key={tag} className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Tag:</span>
+                    <span style={{ fontWeight: 600 }}>{tag}</span>
+                    <button onClick={() => {
+                        const newTags = filters.tags?.filter(t => t !== tag)
+                        setFilters(f => ({ ...f, tags: newTags && newTags.length > 0 ? newTags : undefined }))
+                    }} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
+                  </div>
+                ))}
                 {filters.search && (
                   <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
                     <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Search:</span>
