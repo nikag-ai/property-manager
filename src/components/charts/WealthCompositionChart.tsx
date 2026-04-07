@@ -55,7 +55,7 @@ export function WealthCompositionChart({ data }: { data: WealthData }) {
           />
           <Tooltip 
             contentStyle={{ borderRadius: 'var(--radius-md)', border: 'none', boxShadow: 'var(--shadow-lg)', background: 'var(--surface-1)' }}
-            formatter={(val: any, name: string) => [formatCurrency(Number(val)), name]}
+            formatter={(val: any, name: any) => [formatCurrency(Number(val)), String(name)]}
             labelStyle={{ color: 'var(--text)', fontWeight: 'bold', marginBottom: 8 }}
           />
           <Legend />
