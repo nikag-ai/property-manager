@@ -129,18 +129,36 @@ export default function Overview() {
 
   const calc = computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11)
 
-  const maintenanceTtmPct = useMemo(() => {
-    if (!monthlySummary || monthlySummary.length === 0) return null
+  const summaryWithCumulative = useMemo(() => {
+    if (!monthlySummary || monthlySummary.length === 0) return []
     // Sort chronological (oldest to newest) to get the trailing months
     const chronological = [...monthlySummary].sort((a, b) => a.month.localeCompare(b.month))
-    const last12 = chronological.slice(-12)
+    let cum = 0
+    return chronological.map(row => {
+      // For operational display, treat principal as an expense (matching MonthlyBreakdown)
+      const principal = row.principal_paid || 0
+      const net = row.net_cash_flow - principal
+      cum += net
+      return {
+        ...row,
+        expenses: row.expenses - principal,
+        net_cash_flow: net,
+        cumulative_cf: cum
+      }
+    })
+  }, [monthlySummary])
+
+  const maintenanceTtmPct = useMemo(() => {
+    if (!summaryWithCumulative || summaryWithCumulative.length === 0) return null
+    const last12 = summaryWithCumulative.slice(-12)
     
     const totalMaintenance = last12.reduce((acc, row) => acc + (row.maintenance || 0), 0)
     const totalRent = last12.reduce((acc, row) => acc + (row.income || 0), 0)
     
     if (totalRent === 0) return 0
     return (totalMaintenance / totalRent) * 100
-  }, [monthlySummary])
+  }, [summaryWithCumulative])
+
 
   if (!prop) return <div className="empty-state" style={{ marginTop: 80 }}><p>No property found.</p></div>
 
@@ -167,9 +185,15 @@ export default function Overview() {
         <KpiCard label="Monthly Cash Flow" value={metrics?.monthly_cash_flow} accent="var(--green)" isLoading={isLoading}
           sub="This month: rent − (interest + escrow + expenses)" />
         <Link to="/monthly?view=table" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <KpiCard label="Cumulative CF" value={metrics?.cumulative_cash_flow} accent="var(--teal)" isLoading={isLoading}
-            sub="All-time operational P&L (excl. closing costs & principal)" />
+          <KpiCard 
+            label="Cumulative CF" 
+            value={summaryWithCumulative[summaryWithCumulative.length - 1]?.cumulative_cf} 
+            accent="var(--teal)" 
+            isLoading={isLoading}
+            sub="All-time operational P&L (excl. closing costs & principal)" 
+          />
         </Link>
+
         <KpiCard label="Vacancy Rate" value={metrics?.vacancy_rate_pct} accent="var(--yellow)" format="pct" isLoading={isLoading}
           sub="% of days vacant since purchase" />
         <Link to="/ledger?tag=Maintenance&tag=Rent Income" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -255,8 +279,9 @@ export default function Overview() {
       {/* ── Cash Flow Chart ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 20 }}>Cash Flow History <span style={{ fontSize: '0.8rem', color: 'var(--text-subtle)', fontWeight: 400 }}>— click a month to drill in</span></h3>
-        <CashFlowChart data={monthlySummary} />
+        <CashFlowChart data={summaryWithCumulative} />
       </div>
+
 
       {/* ── Lease Tracker ── */}
       <LeaseTracker propertyId={prop.id} />

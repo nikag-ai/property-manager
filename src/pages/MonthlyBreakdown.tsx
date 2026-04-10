@@ -22,8 +22,6 @@ export default function MonthlyBreakdown() {
 
   const initView  = (searchParams.get('view') as 'chart' | 'table') || 'table'
 
-  const initMonth = searchParams.get('month') ?? ''
-  const initTags  = searchParams.getAll('tag')
 
   const [viewMode, setViewMode] = useState<'chart' | 'table'>(initView)
 
