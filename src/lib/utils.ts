@@ -1,14 +1,15 @@
 import { format, parseISO, differenceInDays } from 'date-fns'
+import { DATE_FORMATS, DATA_LOGIC } from './constants'
 
 /** Short month list */
-export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export const monthNames = DATA_LOGIC.MONTH_NAMES
 
 /** Short month label: "Jan 2025" from YYYY-MM */
 export function formatMonthLabel(m: string): string {
   if (!m) return 'Select Month'
   const [yy, mm] = m.split('-')
   const date = new Date(Number(yy), Number(mm) - 1)
-  return format(date, 'MMM yyyy')
+  return format(date, DATE_FORMATS.DISPLAY_MONTH)
 }
 
 /** Format a number as USD currency */
@@ -38,7 +39,7 @@ export function formatPct(n: number | null | undefined, decimals = 1): string {
 
 /** Format date: "Oct 10, 2025" */
 export function formatDate(iso: string): string {
-  return format(parseISO(iso), 'MMM d, yyyy')
+  return format(parseISO(iso), DATE_FORMATS.DISPLAY_DATE)
 }
 
 /** Days remaining from today to a target date */
@@ -60,7 +61,7 @@ export function withSign(n: number): string {
 
 /** Current month as YYYY-MM */
 export function currentMonth(): string {
-  return format(new Date(), 'yyyy-MM')
+  return format(new Date(), DATE_FORMATS.ISO_MONTH)
 }
 
 /** First day of month ISO string for grouping */

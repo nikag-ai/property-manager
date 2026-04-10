@@ -8,6 +8,7 @@ import { CashFlowChart } from '../components/charts/CashFlowChart'
 
 import { MonthSelector } from '../components/common/MonthSelector'
 import { formatCurrency, formatMonthLabel } from '../lib/utils'
+import { CHART_CONFIG, DATA_LOGIC } from '../lib/constants'
 
 
 export default function MonthlyBreakdown() {
@@ -47,7 +48,13 @@ export default function MonthlyBreakdown() {
     setSearchParams(prev => { prev.set('view', v); return prev }, { replace: true })
   }
 
-  const [includeClosingCosts, setIncludeClosingCosts] = useState(false)
+  const [includeClosingCosts, setIncludeClosingCosts] = useState(() => {
+    return localStorage.getItem('property-ledger-all-in') === 'true'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('property-ledger-all-in', String(includeClosingCosts))
+  }, [includeClosingCosts])
 
   const summaryWithCumulative = useMemo(() => {
     if (!monthlySummary || monthlySummary.length === 0) return []
@@ -55,7 +62,7 @@ export default function MonthlyBreakdown() {
     const chronological = [...monthlySummary].sort((a, b) => a.month.localeCompare(b.month))
     let cum = 0
     return chronological.map(row => {
-      const cc = includeClosingCosts ? (row.closing_costs || 0) : 0
+      const cc = includeClosingCosts ? (row[DATA_LOGIC.SPECIAL_TAGS.CLOSING_COSTS.toLowerCase().replace(' ', '_') as keyof typeof row] as number || 0) : 0
       
       // Treat principal as an expense
       const principal = row.principal_paid || 0;
@@ -150,7 +157,7 @@ export default function MonthlyBreakdown() {
         <div className="card">
           <h3 style={{ marginBottom: 20 }}>Cash Flow by Month</h3>
           {chartLoading
-            ? <div className="skeleton" style={{ height: 320 }} />
+            ? <div className="skeleton" style={{ height: CHART_CONFIG.HEIGHT }} />
             : <CashFlowChart data={chartData} />
           }
         </div>

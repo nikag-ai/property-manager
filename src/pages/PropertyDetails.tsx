@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
 import { useAmortization, useLeases, useUpdateAmortizationRow, useUpdateProperty } from '../hooks/useData'
 import { formatCurrency, formatDate, formatPct } from '../lib/utils'
-import type { AmortizationRow, Lease, Property } from '../lib/types'
-import { addDays, subDays, parseISO, isAfter } from 'date-fns'
+import type { AmortizationRow } from '../lib/types'
+import { addDays, subDays, parseISO } from 'date-fns'
+import { DATA_LOGIC } from '../lib/constants'
 import clsx from 'clsx'
 
 // Modal Component
@@ -101,7 +102,7 @@ export default function PropertyDetails() {
     const sortedLeases = [...leases].sort((a, b) => a.lease_start.localeCompare(b.lease_start))
     const history: ({ type: 'lease' | 'vacancy'; start: string; end: string; rent?: number; id: string })[] = []
     
-    let cursor = prop.purchase_date
+    let cursor = prop[DATA_LOGIC.DEFAULT_VACANCY_START as keyof Property] as string
     const today = new Date().toISOString().split('T')[0]
 
     for (const lease of sortedLeases) {

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useProperty } from '../../contexts/PropertyContext'
+import { APP_METADATA } from '../../lib/constants'
+import { ThemeToggle } from './ThemeToggle'
 
 // Simple home icon
 function HomeIcon() {
@@ -19,9 +21,9 @@ export function Topbar() {
 
   return (
     <header className="topbar">
-      <Link to="/" className="topbar-logo" title="RentLedger Home">
+      <Link to="/" className="topbar-logo" title={`${APP_METADATA.NAME} Home`}>
         <HomeIcon />
-        <span className="desktop-only">RentLedger</span>
+        <span className="desktop-only">{APP_METADATA.NAME}</span>
       </Link>
 
       {properties.length > 0 && (
@@ -39,6 +41,8 @@ export function Topbar() {
       )}
 
       <div className="topbar-spacer" />
+
+      <ThemeToggle />
 
       {profile?.role === 'readonly' && (
         <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>

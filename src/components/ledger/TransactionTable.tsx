@@ -2,6 +2,7 @@ import { useState, Fragment } from 'react'
 
 import type { Transaction } from '../../lib/types'
 import { formatDate, formatCurrency, colorClass, downloadBlob } from '../../lib/utils'
+import { APP_METADATA } from '../../lib/constants'
 import Papa from 'papaparse'
 import clsx from 'clsx'
 import { InfoTooltip } from '../common/InfoTooltip'
@@ -47,7 +48,7 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
       Notes:       t.notes ?? '',
       AutoPosted:  t.is_auto_posted,
     }))
-    downloadBlob(Papa.unparse(rows), `rentledger-transactions.csv`)
+    downloadBlob(Papa.unparse(rows), APP_METADATA.DEFAULT_CSV_FILENAME)
   }
 
   if (isLoading) {

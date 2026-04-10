@@ -3,6 +3,7 @@ import { useState, useMemo, Fragment } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
 import { useTransactions, useTags } from '../hooks/useData'
 import { formatCurrency } from '../lib/utils'
+import { DATA_LOGIC } from '../lib/constants'
 
 import { MonthSelector } from '../components/common/MonthSelector'
 
@@ -36,7 +37,7 @@ export default function IncomeStatement() {
   const now = new Date()
   const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   
-  const startD = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+  const startD = new Date(now.getFullYear(), now.getMonth() - (DATA_LOGIC.DEFAULT_HISTORICAL_MONTHS - 1), 1)
   const start = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, '0')}`
   
   const [startMonth, setStartMonth] = useState(start)
@@ -66,13 +67,13 @@ export default function IncomeStatement() {
     const tree: any = { income: {}, expense: {} }
 
     transactions.forEach(tx => {
-      const cat = tagToCategory.get(tx.tag_name) || (tx.amount > 0 ? 'income' : 'expense')
-      if (cat === 'equity') return // Skip equity for P&L
+      const cat = tagToCategory.get(tx.tag_name) || (tx.amount > 0 ? DATA_LOGIC.CATEGORIES.INCOME : DATA_LOGIC.CATEGORIES.EXPENSE)
+      if (cat === DATA_LOGIC.CATEGORIES.EQUITY) return // Skip equity for P&L
       
       const month = tx.date.substring(0, 7)
       
       // Parse hierarchy from tag name (e.g. "Utilities - Electricity")
-      const delimiters = [' — ', ' - ', ': ', '/']
+      const delimiters = DATA_LOGIC.TAG_DELIMITERS
       let groupName = 'General'
       let leafName = tx.tag_name
 
@@ -85,8 +86,8 @@ export default function IncomeStatement() {
         }
       }
 
-      // Handle Rental Income specifically if needed (optional refinement)
-      if (tx.tag_name === 'Rent Income') {
+      // Handle Rental Income specifically
+      if (tx.tag_name === DATA_LOGIC.SPECIAL_TAGS.RENT_INCOME) {
         groupName = 'Rental Income'
         leafName = 'Rent'
       }

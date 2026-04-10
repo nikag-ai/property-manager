@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { keys } from '../lib/queryClient'
-import type { PropertyMetrics, MonthlySummary, Transaction, TransactionFilters, AmortizationRow, Lease, AutoPostRule, Tag } from '../lib/types'
+import type { PropertyMetrics, MonthlySummary, Transaction, TransactionFilters, AmortizationRow, Lease, AutoPostRule, Tag, Property } from '../lib/types'
 import { currentMonth } from '../lib/utils'
 
 // ── METRICS ──────────────────────────────────────────────────────────────────

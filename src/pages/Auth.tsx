@@ -50,9 +50,9 @@ export default function Auth() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: '2rem', marginBottom: 8 }}>🏠</div>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: 4 }}>RentLedger</h1>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: 4 }}>{APP_METADATA.NAME}</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Real estate investment tracking, honest numbers
+            {APP_METADATA.DESCRIPTION}
           </p>
         </div>
 

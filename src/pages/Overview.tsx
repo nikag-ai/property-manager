@@ -11,6 +11,7 @@ import { useUpdatePropertyValue } from '../hooks/useData'
 import { formatCurrency, formatDate, formatPct } from '../lib/utils'
 import { computeInvestmentIntelligence } from '../lib/calculations'
 import { METRIC_COUNT } from '../lib/metrics'
+import { APP_METADATA, DATA_LOGIC } from '../lib/constants'
 import { Link } from 'react-router-dom'
 import { TransactionTable } from '../components/ledger/TransactionTable'
 import { useTransactions } from '../hooks/useData'
@@ -100,7 +101,7 @@ export default function Overview() {
     return activityTxns.reduce((acc, tx) => {
       // 🚨 Operational Cash Flow logic (matches v_monthly_summary and computeInvestmentIntelligence)
       // Exclude Down Payment and Closing Costs from operational P&L
-      if (tx.tag_name === 'Down Payment' || tx.tag_name === 'Closing Costs') return acc
+      if (tx.tag_name === DATA_LOGIC.SPECIAL_TAGS.DOWN_PAYMENT || tx.tag_name === DATA_LOGIC.SPECIAL_TAGS.CLOSING_COSTS) return acc
 
       let effectiveAmount = tx.amount
       

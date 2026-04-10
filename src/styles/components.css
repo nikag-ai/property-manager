@@ -94,7 +94,7 @@
 
 .btn-primary {
   background: var(--blue);
-  color: #0D1117;
+  color: white;
   border-color: var(--blue);
 }
 .btn-primary:hover { background: #79b8ff; border-color: #79b8ff; }
