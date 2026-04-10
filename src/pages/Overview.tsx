@@ -160,7 +160,12 @@ export default function Overview() {
   }, [summaryWithCumulative])
 
 
+  const latestSummary = summaryWithCumulative[summaryWithCumulative.length - 1]
+  const realMonthlyCashFlow = latestSummary?.net_cash_flow
+  const equityMonthlyBenefit = latestSummary ? (latestSummary.net_cash_flow + (latestSummary.principal_paid || 0)) : null
+
   if (!prop) return <div className="empty-state" style={{ marginTop: 80 }}><p>No property found.</p></div>
+
 
 
   return (
@@ -182,8 +187,21 @@ export default function Overview() {
           <KpiCard label="Gross Equity" value={metrics?.gross_equity} accent="var(--blue)" isLoading={isLoading}
             sub="Current value − remaining loan balance" />
         </Link>
-        <KpiCard label="Monthly Cash Flow" value={metrics?.monthly_cash_flow} accent="var(--green)" isLoading={isLoading}
-          sub="This month: rent − (interest + escrow + expenses)" />
+        <KpiCard 
+          label="Monthly Cash Flow" 
+          value={realMonthlyCashFlow} 
+          accent="var(--green)" 
+          isLoading={isLoading}
+          sub="Money in bank: Rent − (mortgage + expenses)" 
+        />
+        <KpiCard 
+          label="Monthly Equity Benefit" 
+          value={equityMonthlyBenefit} 
+          accent="var(--indigo)" 
+          isLoading={isLoading}
+          sub="Wealth grow: Rent − (interest + escrow + expenses)" 
+        />
+
         <Link to="/monthly?view=table" style={{ textDecoration: 'none', color: 'inherit' }}>
           <KpiCard 
             label="Cumulative CF" 
