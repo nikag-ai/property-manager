@@ -3,7 +3,8 @@ import { useAuth } from '../../contexts/AuthContext'
 
 const tabs = [
   { to: '/',         label: 'Overview',          icon: '◈', adminOnly: false },
-  { to: '/monthly',  label: 'Monthly Breakdown', icon: '▤', adminOnly: false },
+  { to: '/monthly',  label: 'Summary',           icon: '📊', adminOnly: false },
+  { to: '/ledger',   label: 'Ledger',            icon: '📋', adminOnly: false },
   { to: '/expenses', label: 'Expenses',          icon: '📉', adminOnly: false },
   { to: '/property', label: 'Property Details',  icon: '⚙', adminOnly: false },
   { to: '/add',      label: 'Quick Add',         icon: '+', adminOnly: true },

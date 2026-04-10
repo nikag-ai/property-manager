@@ -127,9 +127,23 @@ export default function Overview() {
     }, { income: 0, expenses: 0, cashflow: 0 })
   }, [activityTxns])
 
+  const calc = computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11)
+
+  const maintenanceTtmPct = useMemo(() => {
+    if (!monthlySummary || monthlySummary.length === 0) return null
+    // Sort chronological (oldest to newest) to get the trailing months
+    const chronological = [...monthlySummary].sort((a, b) => a.month.localeCompare(b.month))
+    const last12 = chronological.slice(-12)
+    
+    const totalMaintenance = last12.reduce((acc, row) => acc + (row.maintenance || 0), 0)
+    const totalRent = last12.reduce((acc, row) => acc + (row.income || 0), 0)
+    
+    if (totalRent === 0) return 0
+    return (totalMaintenance / totalRent) * 100
+  }, [monthlySummary])
+
   if (!prop) return <div className="empty-state" style={{ marginTop: 80 }}><p>No property found.</p></div>
 
-  const calc = computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11)
 
   return (
     <main className="page-content">
@@ -158,6 +172,10 @@ export default function Overview() {
         </Link>
         <KpiCard label="Vacancy Rate" value={metrics?.vacancy_rate_pct} accent="var(--yellow)" format="pct" isLoading={isLoading}
           sub="% of days vacant since purchase" />
+        <Link to="/ledger?tag=Maintenance&tag=Rent Income" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <KpiCard label="Maintenance % (TTM)" value={maintenanceTtmPct} accent="var(--orange)" format="pct" isLoading={isLoading}
+            sub="Maintenance vs Rent (Last 12 mo)" />
+        </Link>
       </KpiRow>
 
       {/* ── Property value editors ── */}

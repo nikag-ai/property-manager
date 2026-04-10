@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
+
 import type { Transaction } from '../../lib/types'
 import { formatDate, formatCurrency, colorClass, downloadBlob } from '../../lib/utils'
 import Papa from 'papaparse'
@@ -90,7 +91,8 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
           </thead>
           <tbody>
             {paginated.map(t => (
-              <>
+              <Fragment key={t.id}>
+
                 <tr key={t.id}>
                   <td>
                     {t.breakdown && (
@@ -187,7 +189,7 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

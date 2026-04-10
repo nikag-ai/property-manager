@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+
 import { useProperty } from '../contexts/PropertyContext'
-import { useMonthlySummary, useTransactions } from '../hooks/useData'
+import { useMonthlySummary } from '../hooks/useData'
 import { CashFlowChart } from '../components/charts/CashFlowChart'
-import { TransactionTable } from '../components/ledger/TransactionTable'
-import type { TransactionFilters } from '../lib/types'
+
 
 import { formatCurrency } from '../lib/utils'
 
@@ -17,36 +17,30 @@ const formatMonth = (m: string) => {
 export default function MonthlyBreakdown() {
   const { activePropertyId: propId } = useProperty()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
-  const initView  = (searchParams.get('view') as 'chart' | 'ledger' | 'table') || 'table'
+
+  const initView  = (searchParams.get('view') as 'chart' | 'table') || 'table'
+
   const initMonth = searchParams.get('month') ?? ''
   const initTags  = searchParams.getAll('tag')
 
-  const [viewMode, setViewMode] = useState<'chart' | 'ledger' | 'table'>(initView)
-  const [filters, setFilters]   = useState<TransactionFilters>({ 
-    month: initMonth || undefined,
-    tags: initTags.length > 0 ? initTags : undefined
-  })
+  const [viewMode, setViewMode] = useState<'chart' | 'table'>(initView)
+
+
+
 
   // Sync URL → state when navigating here from chart click
   useEffect(() => {
-    const m = searchParams.get('month')
     const v = searchParams.get('view')
-    const urlTags = searchParams.getAll('tag')
-    
-    if (v === 'ledger' || v === 'table' || v === 'chart') setViewMode(v as 'chart'|'ledger'|'table')
-    
-    setFilters(f => ({ 
-      ...f, 
-      month: m || undefined,
-      tags: urlTags.length > 0 ? urlTags : undefined
-    }))
+    if (v === 'table' || v === 'chart') setViewMode(v as 'chart'|'table')
   }, [searchParams])
 
   const { data: monthlySummary = [], isLoading: chartLoading } = useMonthlySummary(propId)
-  const { data: transactions = [],   isLoading: txLoading }    = useTransactions(propId, filters)
 
-  const switchView = (v: 'chart' | 'ledger' | 'table') => {
+
+  const switchView = (v: 'chart' | 'table') => {
+
     setViewMode(v)
     setSearchParams(prev => { prev.set('view', v); return prev }, { replace: true })
   }
@@ -82,27 +76,11 @@ export default function MonthlyBreakdown() {
     return [...summaryWithCumulative].reverse()
   }, [summaryWithCumulative])
 
-  const hasFilters = Object.values(filters).some(v => v !== undefined && v !== '')
 
-  const displayTransactions = useMemo(() => {
-    if (includeClosingCosts) return transactions
 
-    return transactions
-      .filter(tx => tx.tag_name !== 'Closing Costs' && tx.tag_name !== 'Down Payment')
-      .map(tx => {
-        if (!tx.breakdown) return tx
-        
-        // Operational Mode: Hide Principal and adjust the effective amount
-        const opLines = tx.breakdown.filter(line => line.label !== 'Principal')
-        const opAmount = opLines.reduce((sum, line) => sum + (line.amount || 0), 0)
-        
-        return {
-          ...tx,
-          amount: tx.amount < 0 ? -opAmount : opAmount,
-          breakdown: opLines
-        }
-      })
-  }, [transactions, includeClosingCosts])
+
+
+
 
   return (
     <main className="page-content">
@@ -130,7 +108,6 @@ export default function MonthlyBreakdown() {
         <div className="toggle-group">
           <button className={`toggle-btn${viewMode === 'chart'  ? ' active' : ''}`} onClick={() => switchView('chart')}>📊 Chart</button>
           <button className={`toggle-btn${viewMode === 'table' ? ' active' : ''}`} onClick={() => switchView('table')}>🧮 Summary</button>
-          <button className={`toggle-btn${viewMode === 'ledger' ? ' active' : ''}`} onClick={() => switchView('ledger')}>📋 Ledger</button>
         </div>
       </div>
 
@@ -142,8 +119,9 @@ export default function MonthlyBreakdown() {
             : <CashFlowChart data={chartData} />
           }
         </div>
-      ) : viewMode === 'table' ? (
+      ) : (
         <div className="card">
+
           <h3 style={{ marginBottom: 20 }}>High-Level Month over Month</h3>
           <div className="table-responsive">
             <table>
@@ -168,13 +146,8 @@ export default function MonthlyBreakdown() {
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                     onClick={() => {
                       const m = row.month.substring(0, 7)
-                      setFilters(f => ({ ...f, month: m }))
-                      setSearchParams(prev => {
-                        prev.set('view', 'ledger')
-                        prev.set('month', m)
-                        return prev
-                      }) // Replaced so drill-down adds to history
-                      setViewMode('ledger')
+                      // Navigate to dedicated ledger page
+                      navigate(`/ledger?month=${m}`)
                     }}
                   >
                     <td style={{ fontWeight: 600 }}>{formatMonth(row.month)}</td>
@@ -195,84 +168,8 @@ export default function MonthlyBreakdown() {
             </table>
           </div>
         </div>
-      ) : (
-        <div className="card">
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
-            <div className="form-group" style={{ flex: '1 1 120px' }}>
-              <label className="form-label">Month</label>
-              <input type="month" className="form-input" value={filters.month ?? ''}
-                onChange={e => setFilters(f => ({ ...f, month: e.target.value || undefined }))} />
-            </div>
-            <div className="form-group" style={{ flex: '1 1 160px' }}>
-              <label className="form-label">Tag</label>
-              <input type="text" className="form-input" placeholder="Filter by tag…" value={filters.tag_name ?? ''}
-                onChange={e => setFilters(f => ({ ...f, tag_name: e.target.value || undefined }))} />
-            </div>
-            <div className="form-group" style={{ flex: '2 1 180px', minWidth: 200 }}>
-              <label className="form-label">Search notes</label>
-              <input type="text" className="form-input" placeholder="Search…" value={filters.search ?? ''}
-                onChange={e => setFilters(f => ({ ...f, search: e.target.value || undefined }))} />
-            </div>
-            {hasFilters && (
-              <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-end' }} onClick={() => {
-                setFilters({})
-                setSearchParams({}, { replace: true })
-              }}>Clear all</button>
-            )}
-          </div>
-
-          {/* Active Filter Chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, padding: '0 4px' }}>
-            {!includeClosingCosts && (
-              <div className="badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 16, background: 'rgba(147, 51, 234, 0.1)', border: '1px solid var(--purple)', color: 'var(--purple)', fontSize: '0.8125rem' }}>
-                <span style={{ fontWeight: 600 }}>Operational View</span>
-                <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Excl. Principal & Acquisition)</span>
-                <button 
-                  onClick={() => setIncludeClosingCosts(true)} 
-                  title="Show all costs (All-in Mode)"
-                  style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0 2px', display: 'flex', alignItems: 'center', color: 'var(--purple)', fontWeight: 800 }}>✕</button>
-              </div>
-            )}
-
-            {hasFilters && (
-              <>
-                {filters.month && (
-                  <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Month:</span>
-                    <span style={{ fontWeight: 600 }}>{formatMonth(filters.month)}</span>
-                    <button onClick={() => setFilters(f => ({ ...f, month: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
-                  </div>
-                )}
-                {filters.tag_name && (
-                  <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Tag:</span>
-                    <span style={{ fontWeight: 600 }}>{filters.tag_name}</span>
-                    <button onClick={() => setFilters(f => ({ ...f, tag_name: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
-                  </div>
-                )}
-                {filters.tags?.map(tag => (
-                  <div key={tag} className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Tag:</span>
-                    <span style={{ fontWeight: 600 }}>{tag}</span>
-                    <button onClick={() => {
-                        const newTags = filters.tags?.filter(t => t !== tag)
-                        setFilters(f => ({ ...f, tags: newTags && newTags.length > 0 ? newTags : undefined }))
-                    }} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
-                  </div>
-                ))}
-                {filters.search && (
-                  <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Search:</span>
-                    <span style={{ fontWeight: 600 }}>"{filters.search}"</span>
-                    <button onClick={() => setFilters(f => ({ ...f, search: undefined }))} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          <TransactionTable transactions={displayTransactions} isLoading={txLoading} />
-        </div>
       )}
+
     </main>
   )
 }

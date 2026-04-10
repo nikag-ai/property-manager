@@ -333,17 +333,16 @@ h4 { font-size: 0.8125rem; font-weight: 600; }
 
 /* ── KPI Cards ───────────────────────────────────────────── */
 .kpi-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
 
-@media (max-width: 1100px) {
-  .kpi-row { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 700px) {
-  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+.kpi-row > *,
+.kpi-card {
+  flex: 1 1 240px;
+  min-width: 200px;
 }
 
 .kpi-card {

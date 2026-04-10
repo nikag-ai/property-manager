@@ -251,6 +251,24 @@ export function useTags(propertyId: string | null) {
   })
 }
 
+export function useActiveTags(propertyId: string | null) {
+  return useQuery({
+    queryKey: [...keys.tags(propertyId ?? ''), 'active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('tag_name')
+        .eq('property_id', propertyId)
+      if (error) throw error
+      
+      const uniqueTags = Array.from(new Set(data.map(t => t.tag_name))).filter(Boolean).sort()
+      return uniqueTags
+    },
+    enabled: !!propertyId,
+  })
+}
+
+
 // ── UPDATE PROPERTY VALUE ─────────────────────────────────────────────────────
 export function useUpdatePropertyValue() {
   const qc = useQueryClient()
