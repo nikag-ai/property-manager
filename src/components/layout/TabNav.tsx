@@ -6,6 +6,7 @@ const tabs = [
   { to: '/monthly',  label: 'Summary',           icon: '📊', adminOnly: false },
   { to: '/ledger',   label: 'Ledger',            icon: '📋', adminOnly: false },
   { to: '/expenses', label: 'Expenses',          icon: '📉', adminOnly: false },
+  { to: '/income-statement', label: 'Income Statement', icon: '📝', adminOnly: false },
   { to: '/property', label: 'Property Details',  icon: '⚙', adminOnly: false },
   { to: '/add',      label: 'Quick Add',         icon: '+', adminOnly: true },
 ]

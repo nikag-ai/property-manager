@@ -12,6 +12,7 @@ import IntelligenceDeepDive from './pages/IntelligenceDeepDive'
 import IntelligenceHub from './pages/IntelligenceHub'
 import Expenses from './pages/Expenses'
 import Ledger from './pages/Ledger'
+import IncomeStatement from './pages/IncomeStatement'
 
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="monthly"  element={<MonthlyBreakdown />} />
               <Route path="ledger"   element={<Ledger />} />
               <Route path="expenses" element={<Expenses />} />
+              <Route path="income-statement" element={<IncomeStatement />} />
               <Route path="add"      element={<QuickAdd />} />
               <Route path="property" element={<PropertyDetails />} />
               <Route path="intelligence/all" element={<IntelligenceHub />} />

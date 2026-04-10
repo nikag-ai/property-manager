@@ -147,8 +147,10 @@ export default function MonthlyBreakdown() {
                     onClick={() => {
                       const m = row.month.substring(0, 7)
                       // Navigate to dedicated ledger page
-                      navigate(`/ledger?month=${m}`)
+                      navigate(`/ledger?month=${m}${!includeClosingCosts ? '&allIn=false' : ''}`)
                     }}
+
+
                   >
                     <td style={{ fontWeight: 600 }}>{formatMonth(row.month)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.income)}</td>

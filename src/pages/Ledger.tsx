@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useProperty } from '../contexts/PropertyContext'
 import { useTransactions, useActiveTags } from '../hooks/useData'
+import { formatCurrency } from '../lib/utils'
+
 
 import { TransactionTable } from '../components/ledger/TransactionTable'
 import type { TransactionFilters } from '../lib/types'
@@ -27,7 +29,9 @@ export default function Ledger() {
   })
 
   const [tagInput, setTagInput] = useState('')
-  const [includeClosingCosts, setIncludeClosingCosts] = useState(false)
+  const includeClosingCosts = searchParams.get('allIn') !== 'false'
+
+
 
   // Sync URL -> state
   useEffect(() => {
@@ -90,42 +94,17 @@ export default function Ledger() {
 
     return transactions
       .filter(tx => tx.tag_name !== 'Closing Costs' && tx.tag_name !== 'Down Payment')
-      .map(tx => {
-        if (!tx.breakdown) return tx
-        const opLines = tx.breakdown.filter(line => line.label !== 'Principal')
-        const opAmount = opLines.reduce((sum, line) => sum + (line.amount || 0), 0)
-        return {
-          ...tx,
-          amount: tx.amount < 0 ? -opAmount : opAmount,
-          breakdown: opLines
-        }
-      })
   }, [transactions, includeClosingCosts])
+
 
   const hasFilters = Object.values(filters).some(v => v !== undefined && v !== '')
 
   return (
     <main className="page-content">
-      <div className="section-header" style={{ marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
+      <div className="section-header" style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: '1.25rem' }}>Full Ledger</h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginRight: 'auto', background: 'var(--surface-2)', padding: '4px 12px', borderRadius: '20px', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>All-in Mode</span>
-          <label className="switch" style={{ position: 'relative', display: 'inline-block', width: 34, height: 20 }}>
-            <input type="checkbox" checked={includeClosingCosts} onChange={e => setIncludeClosingCosts(e.target.checked)} 
-              style={{ opacity: 0, width: 0, height: 0 }} />
-            <span className="slider" style={{ 
-              position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, 
-              backgroundColor: includeClosingCosts ? 'var(--purple)' : '#ccc', transition: '.2s', borderRadius: 20 
-            }}>
-              <span style={{ 
-                position: 'absolute', content: '""', height: 14, width: 14, left: includeClosingCosts ? 17 : 3, bottom: 3, 
-                backgroundColor: 'white', transition: '.2s', borderRadius: '50%' 
-              }} />
-            </span>
-          </label>
-        </div>
       </div>
+
 
       <div className="card">
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
@@ -141,34 +120,32 @@ export default function Ledger() {
 
           <div className="form-group" style={{ flex: '1 1 200px', position: 'relative' }}>
             <label className="form-label">Tags</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Filter by tags…" 
-                value={tagInput}
-                list="tags-datalist"
-                onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleAddTag(tagInput)
-                  }
-                }}
-              />
-              <button 
-                className="btn btn-secondary btn-sm" 
-                onClick={() => handleAddTag(tagInput)}
-                title="Add tag filter"
-              >
-                ✓
-              </button>
-            </div>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Filter by tags…" 
+              value={tagInput}
+              list="tags-datalist"
+              onChange={e => {
+                const val = e.target.value
+                setTagInput(val)
+                // Auto-add if it exactly matches an available tag (selection from datalist)
+                if (availableTags.includes(val)) {
+                  handleAddTag(val)
+                }
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddTag(tagInput)
+                }
+              }}
+            />
             <datalist id="tags-datalist">
               {availableTags.map(t => <option key={t} value={t} />)}
             </datalist>
-
           </div>
+
 
           <div className="form-group" style={{ flex: '2 1 180px', minWidth: 200 }}>
             <label className="form-label">Search notes</label>
@@ -188,18 +165,8 @@ export default function Ledger() {
           )}
         </div>
 
-        {/* Active Filter Chips */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, padding: '0 4px' }}>
-          {!includeClosingCosts && (
-            <div className="badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 16, background: 'rgba(147, 51, 234, 0.1)', border: '1px solid var(--purple)', color: 'var(--purple)', fontSize: '0.8125rem' }}>
-              <span style={{ fontWeight: 600 }}>Operational View</span>
-              <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Excl. Principal & Acquisition)</span>
-              <button 
-                onClick={() => setIncludeClosingCosts(true)} 
-                title="Show all costs"
-                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0 2px', display: 'flex', alignItems: 'center', color: 'var(--purple)', fontWeight: 800 }}>✕</button>
-            </div>
-          )}
+
 
           {hasFilters && (
             <>
@@ -236,7 +203,30 @@ export default function Ledger() {
           )}
         </div>
 
+        {/* Summary Stats */}
+        <div className="section-header" style={{ marginBottom: 16, background: 'var(--surface-2)', padding: '12px 20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', justifyContent: 'flex-start', gap: 32 }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Income</span>
+            <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>
+              {formatCurrency(displayTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + (t.amount || 0), 0))}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Expenses</span>
+            <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--red)', fontFamily: 'var(--font-mono)' }}>
+              {formatCurrency(Math.abs(displayTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + (t.amount || 0), 0)))}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 'auto', textAlign: 'right' }}>
+            <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Net Flow</span>
+            <span style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+              {formatCurrency(displayTransactions.reduce((sum, t) => sum + (t.amount || 0), 0))}
+            </span>
+          </div>
+        </div>
+
         <TransactionTable transactions={displayTransactions} isLoading={txLoading} />
+
       </div>
     </main>
   )

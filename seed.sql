@@ -165,9 +165,10 @@ from public.properties p where p.address = '864 Moray Ln';
 -- Listing photos
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)
 select p.id, '2025-10-10', -245.00,
-  (select id from public.tags where property_id = p.id and name = 'Leasing Fee'),
-  'Leasing Fee', 'Listing photos — Marshall Reddick', false
+  (select id from public.tags where property_id = p.id and name = 'Other Expense'),
+  'Other Expense', 'Listing photos — Marshall Reddick', false
 from public.properties p where p.address = '864 Moray Ln';
+
 
 -- Third-party inspection
 insert into public.transactions (property_id, date, amount, tag_id, tag_name, notes, is_auto_posted)

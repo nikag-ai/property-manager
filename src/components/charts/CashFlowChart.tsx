@@ -23,30 +23,36 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
-interface CashFlowChartProps {
-  data: MonthlySummary[]
+// Helper to ensure both axes share the same zero line position
+const getSymmetricalDomain = (data: any[], key: string) => {
+  const values = data.map((d: any) => d[key])
+  const min = Math.min(0, ...values)
+  const max = Math.max(0, ...values)
+  
+  // To align zeros, we need to find the furthest side from zero
+  // and scale the other side to keep the proportions.
+  return [min || 'auto', max || 'auto'] as const
 }
 
 export function CashFlowChart({ data }: CashFlowChartProps) {
   const navigate = useNavigate()
 
-  const chartData = data.map(d => ({
+  const chartData = data.map((d: any) => ({
     month:    formatMonthLabel(d.month),
     monthKey: d.month.slice(0, 7),          // YYYY-MM
     Income:   d.income,
     Expenses: Math.abs(d.expenses),
     'Net CF': d.net_cash_flow,
+    'Cumulative': d.cumulative_cf,
   }))
 
   const handleClick = useCallback((data: any) => {
     if (!data) return
-    // If clicked on the chart background/tooltip area
     let monthKey = data?.activePayload?.[0]?.payload?.monthKey
-    // If clicked directly on a graphical element (Bar, Line, dot)
     if (!monthKey && data.payload && data.payload.monthKey) monthKey = data.payload.monthKey
     if (!monthKey && data.monthKey) monthKey = data.monthKey
 
-    if (monthKey) navigate(`/monthly?month=${monthKey}&view=ledger`)
+    if (monthKey) navigate(`/ledger?month=${monthKey}`)
   }, [navigate])
 
   return (
@@ -54,22 +60,54 @@ export function CashFlowChart({ data }: CashFlowChartProps) {
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart
           data={chartData}
-          margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
           onClick={handleClick}
           style={{ cursor: 'pointer' }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
           <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={v => `$${Math.abs(v / 1000).toFixed(0)}k`} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} width={48} />
+          <YAxis 
+            yAxisId="left" 
+            domain={['auto', 'auto']}
+            tickFormatter={v => {
+              const k = v / 1000
+              const absK = Math.abs(k)
+              const formatted = absK < 10 && absK !== 0 ? absK.toFixed(1) : absK.toFixed(0)
+              return `${v < 0 ? '-' : ''}$${formatted}k`
+            }} 
+            tick={{ fill: 'var(--text-muted)', fontSize: 11 }} 
+            axisLine={false} 
+            tickLine={false} 
+            width={54} 
+          />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right" 
+            domain={['auto', 'auto']}
+            tickFormatter={v => {
+              const k = v / 1000
+              const absK = Math.abs(k)
+              const formatted = absK < 10 && absK !== 0 ? absK.toFixed(1) : absK.toFixed(0)
+              return `${v < 0 ? '-' : ''}$${formatted}k`
+            }} 
+            tick={{ fill: 'var(--purple)', fontSize: 11 }} 
+            axisLine={false} 
+            tickLine={false} 
+            width={54} 
+          />
+
+
+
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: '0.8rem', color: 'var(--text-muted)', paddingTop: 8 }} />
-          <ReferenceLine y={0} stroke="var(--border)" />
-          <Bar dataKey="Income"   fill="var(--green)" radius={[4,4,0,0]} maxBarSize={40} onClick={handleClick} />
-          <Bar dataKey="Expenses" fill="var(--red)"   radius={[4,4,0,0]} maxBarSize={40} opacity={0.8} onClick={handleClick} />
-          <Line dataKey="Net CF"  stroke="var(--blue)" strokeWidth={2} dot={{ r: 3, fill: 'var(--blue)' }} type="monotone" onClick={handleClick} />
-
+          <ReferenceLine y={0} yAxisId="left" stroke="var(--border)" />
+          <Bar yAxisId="left" dataKey="Income"   fill="var(--green)" radius={[4,4,0,0]} maxBarSize={40} onClick={handleClick} />
+          <Bar yAxisId="left" dataKey="Expenses" fill="var(--red)"   radius={[4,4,0,0]} maxBarSize={40} opacity={0.8} onClick={handleClick} />
+          <Line yAxisId="left" dataKey="Net CF"  stroke="var(--blue)" strokeWidth={2} dot={{ r: 3, fill: 'var(--blue)' }} type="monotone" onClick={handleClick} />
+          <Line yAxisId="right" dataKey="Cumulative" stroke="var(--purple)" strokeWidth={3} dot={false} type="monotone" />
         </ComposedChart>
       </ResponsiveContainer>
+
       <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-subtle)', marginTop: 8 }}>
         Click any month bar to open transactions ledger
       </div>
