@@ -74,7 +74,8 @@ export default function Overview() {
   const updateValue = useUpdatePropertyValue()
 
   // Activity section logic
-  const [timeRange, setTimeRange] = useState<'30d' | '3m' | '6m' | 'ytd' | 'all'>('6m')
+  const [timeRange, setTimeRange] = useState<'30d' | '3m' | '6m' | 'ytd' | 'all'>('30d')
+
 
   const dateFrom = useMemo(() => {
     const d = new Date()
