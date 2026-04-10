@@ -282,6 +282,23 @@ export function useActiveTags(propertyId: string | null) {
 }
 
 
+// ── UPDATE PROPERTY ───────────────────────────────────────────────────────────
+export function useUpdateProperty() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ propertyId, patch }: { propertyId: string, patch: Partial<Property> }) => {
+      const { error } = await supabase.from('properties').update(patch).eq('id', propertyId)
+      if (error) throw error
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: keys.property(vars.propertyId) })
+      qc.invalidateQueries({ queryKey: keys.properties() })
+      // If we update metrics-affecting fields, invalidate metrics too
+      qc.invalidateQueries({ queryKey: keys.metrics(vars.propertyId) })
+    },
+  })
+}
+
 // ── UPDATE PROPERTY VALUE ─────────────────────────────────────────────────────
 export function useUpdatePropertyValue() {
   const qc = useQueryClient()

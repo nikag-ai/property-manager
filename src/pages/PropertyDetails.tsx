@@ -1,57 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
-import { useAmortization, useLeases, useUpdateAmortizationRow } from '../hooks/useData'
+import { useAmortization, useLeases, useUpdateAmortizationRow, useUpdateProperty } from '../hooks/useData'
 import { formatCurrency, formatDate, formatPct } from '../lib/utils'
-import type { AmortizationRow, Lease } from '../lib/types'
+import type { AmortizationRow, Lease, Property } from '../lib/types'
+import { addDays, subDays, parseISO, isAfter } from 'date-fns'
 import clsx from 'clsx'
 
-function buildTimeline(purchaseDateStr: string, leases: Lease[]) {
-  const purchaseDate = new Date(purchaseDateStr).getTime()
-  const sortedLeases = [...leases].sort((a, b) => new Date(a.lease_start).getTime() - new Date(b.lease_start).getTime())
-  
-  const todayMillis = new Date().getTime()
-  let maxDate = Math.max(todayMillis, purchaseDate)
-  if (sortedLeases.length > 0) {
-    const lastLeaseEnd = new Date(sortedLeases[sortedLeases.length - 1].lease_end).getTime()
-    if (lastLeaseEnd > maxDate) maxDate = lastLeaseEnd
-  }
-
-  const totalDuration = maxDate - purchaseDate;
-  if (totalDuration === 0) return { segments: [], maxDateStr: purchaseDateStr };
-
-  const segments: { type: 'vacant' | 'leased', label: string, startPct: number, widthPct: number }[] = []
-  let cursor = purchaseDate;
-
-  for (const lease of sortedLeases) {
-    const lStart = new Date(lease.lease_start).getTime()
-    const lEnd = new Date(lease.lease_end).getTime()
-
-    if (lStart > cursor) {
-      segments.push({
-        type: 'vacant', label: 'Vacant',
-        startPct: ((cursor - purchaseDate) / totalDuration) * 100,
-        widthPct: ((lStart - cursor) / totalDuration) * 100
-      })
-    }
-    
-    segments.push({
-      type: 'leased', label: 'Leased',
-      startPct: ((lStart - purchaseDate) / totalDuration) * 100,
-      widthPct: ((lEnd - lStart) / totalDuration) * 100
-    })
-
-    cursor = Math.max(cursor, lEnd)
-  }
-
-  if (maxDate > cursor) {
-    segments.push({
-        type: 'vacant', label: 'Vacant',
-        startPct: ((cursor - purchaseDate) / totalDuration) * 100,
-        widthPct: ((maxDate - cursor) / totalDuration) * 100
-    })
-  }
-
-  return { segments, maxDateStr: new Date(maxDate).toISOString().split('T')[0] };
+// Modal Component
+function Modal({ title, isOpen, onClose, children }: { title: string; isOpen: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!isOpen) return null
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ 
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+      background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5000, 
+      padding: 20
+    }}>
+      <div className="card" onClick={e => e.stopPropagation()} style={{ 
+        width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto',
+        border: '1px solid var(--border)', background: 'var(--surface-2)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ fontSize: '1.1rem' }}>{title}</h2>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
 }
 
 // Inline editable cell
@@ -76,7 +53,8 @@ function EditCell({ value, onSave, prefix = '' }: { value: number; onSave: (v: n
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
-        style={{ width: 90, background: 'var(--surface-3)', border: '1px solid var(--blue)', borderRadius: 4, color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', padding: '2px 6px', outline: 'none' }}
+        className="form-input"
+        style={{ width: 90, height: 24, fontSize: '0.8125rem', padding: '0 6px' }}
       />
     )
   }
@@ -97,7 +75,69 @@ export default function PropertyDetails() {
   const { data: amortRows = [], isLoading: amortLoading } = useAmortization(prop?.id ?? null)
   const { data: leases = [] }                             = useLeases(prop?.id ?? null)
   const updateRow                                         = useUpdateAmortizationRow()
+  const updateProp                                        = useUpdateProperty()
   const [showAll, setShowAll]                             = useState(false)
+
+  // Modal states
+  const [isLinksModalOpen, setIsLinksModalOpen] = useState(false)
+  const [isContactsModalOpen, setIsContactsModalOpen] = useState(false)
+
+  // Local state for editing lists
+  const [tempLinks, setTempLinks] = useState<{ label: string; url: string }[]>([])
+  const [tempContacts, setTempContacts] = useState<{ name: string; role: string; email: string; phone: string }[]>([])
+
+  useEffect(() => {
+    if (prop) {
+      setTempLinks(prop.quick_links || [])
+      setTempContacts(prop.important_contacts || [])
+    }
+  }, [prop, isLinksModalOpen, isContactsModalOpen])
+
+  // Unified History Calculation
+  const unifiedHistory = useMemo(() => {
+    if (!prop) return []
+    
+    // Sort leases ASC to calculate gaps
+    const sortedLeases = [...leases].sort((a, b) => a.lease_start.localeCompare(b.lease_start))
+    const history: ({ type: 'lease' | 'vacancy'; start: string; end: string; rent?: number; id: string })[] = []
+    
+    let cursor = prop.purchase_date
+    const today = new Date().toISOString().split('T')[0]
+
+    for (const lease of sortedLeases) {
+      // Gap before lease
+      if (lease.lease_start > cursor) {
+        history.push({
+          id: `vac-${cursor}`,
+          type: 'vacancy',
+          start: cursor,
+          end: new Date(subDays(parseISO(lease.lease_start), 1)).toISOString().split('T')[0]
+        })
+      }
+      // The lease itself
+      history.push({
+        id: lease.id,
+        type: 'lease',
+        start: lease.lease_start,
+        end: lease.lease_end,
+        rent: lease.monthly_rent
+      })
+      cursor = new Date(addDays(parseISO(lease.lease_end), 1)).toISOString().split('T')[0]
+    }
+
+    // Gap after last lease (until today)
+    if (today > cursor) {
+      history.push({
+        id: `vac-end`,
+        type: 'vacancy',
+        start: cursor,
+        end: today
+      })
+    }
+
+    // Return DESC (newest first)
+    return history.sort((a, b) => b.start.localeCompare(a.start))
+  }, [prop, leases])
 
   if (!prop) return <div className="empty-state" style={{ marginTop: 80 }}><p>No property found.</p></div>
 
@@ -109,9 +149,76 @@ export default function PropertyDetails() {
     updateRow.mutate({ id: row.id, propertyId: prop.id, patch })
   }
 
+  const saveLinks = () => {
+    updateProp.mutate({ propertyId: prop.id, patch: { quick_links: tempLinks } })
+    setIsLinksModalOpen(false)
+  }
+
+  const saveContacts = () => {
+    updateProp.mutate({ propertyId: prop.id, patch: { important_contacts: tempContacts } })
+    setIsContactsModalOpen(false)
+  }
+
   return (
     <main className="page-content">
       <h1 style={{ fontSize: '1.25rem', marginBottom: 24 }}>Property Details</h1>
+
+      {/* Quick Links & Contacts */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 24 }}>
+        {/* Quick Links */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+             <h3>Quick Links</h3>
+             <button className="btn btn-ghost btn-xs" style={{ color: 'var(--blue)' }} onClick={() => setIsLinksModalOpen(true)}>Edit</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(prop.quick_links || []).length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>No links added.</p>
+            ) : (
+              prop.quick_links?.map(link => (
+                <a 
+                  key={link.label}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-outline"
+                  style={{ justifyContent: 'flex-start', padding: '10px 16px', fontSize: '0.8125rem', color: 'var(--blue)' }}
+                >
+                  <span style={{ marginRight: 8, fontSize: '0.9rem' }}>🔗</span> {link.label}
+                </a>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Important Contacts */}
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+             <h3>Important Contacts</h3>
+             <button className="btn btn-ghost btn-xs" style={{ color: 'var(--blue)' }} onClick={() => setIsContactsModalOpen(true)}>Edit</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {(prop.important_contacts || []).length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>No contacts added.</p>
+            ) : (
+              prop.important_contacts?.map(contact => (
+                <div key={contact.name} style={{ borderLeft: '3px solid var(--purple)', paddingLeft: 16 }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>{contact.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>{contact.role}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <a href={`mailto:${contact.email}`} style={{ fontSize: '0.8125rem', color: 'var(--blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      📧 <span style={{ textDecoration: 'underline', textUnderlineOffset: 2 }}>{contact.email}</span>
+                    </a>
+                    <a href={`tel:${contact.phone.replace(/\D/g, '')}`} style={{ fontSize: '0.8125rem', color: 'var(--text)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      📞 <span>{contact.phone}</span>
+                    </a>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Loan summary */}
       <div className="card" style={{ marginBottom: 24 }}>
@@ -235,72 +342,61 @@ export default function PropertyDetails() {
 
       {/* Lease history */}
       <div className="card">
-        <h3 style={{ marginBottom: 18 }}>Lease History</h3>
+        <h3 style={{ marginBottom: 18 }}>Ownership & Lease History</h3>
         
-        {prop && (
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 500 }}>
-              <span>Purchase: {formatDate(prop.purchase_date)}</span>
-              <span>{buildTimeline(prop.purchase_date, leases).maxDateStr === prop.purchase_date ? 'Today' : formatDate(buildTimeline(prop.purchase_date, leases).maxDateStr)}</span>
-            </div>
-            
-            <div style={{ display: 'flex', height: 28, borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--surface-3)', border: '1px solid var(--border)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)' }}>
-              {buildTimeline(prop.purchase_date, leases).segments.map((seg, i, arr) => (
-                <div 
-                  key={i} 
-                  style={{ 
-                    width: `${seg.widthPct}%`, 
-                    background: seg.type === 'leased' ? 'var(--blue)' : 'var(--yellow)',
-                    opacity: seg.type === 'leased' ? 0.8 : 0.6,
-                    borderRight: i < arr.length - 1 ? '1px solid var(--surface)' : 'none',
-                    transition: 'opacity 0.2s',
-                    cursor: 'help'
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = seg.type === 'leased' ? '0.8' : '0.6')}
-                  title={`${seg.label} (${seg.widthPct.toFixed(1)}% of timeline)`}
-                />
-              ))}
-            </div>
-            
-            <div style={{ display: 'flex', gap: 24, marginTop: 12, justifyContent: 'center' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                 <span style={{ width: 12, height: 12, background: 'var(--blue)', opacity: 0.8, borderRadius: 2 }}/> Leased
-               </div>
-               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                 <span style={{ width: 12, height: 12, background: 'var(--yellow)', opacity: 0.6, borderRadius: 2 }}/> Vacant
-               </div>
-            </div>
-          </div>
-        )}
-
-        {leases.length === 0 ? (
-          <div className="empty-state" style={{ padding: '24px 0' }}><p>No leases on record.</p></div>
+        {unifiedHistory.length === 0 ? (
+          <div className="empty-state" style={{ padding: '24px 0' }}><p>No history on record.</p></div>
         ) : (
           <div className="table-responsive">
             <table>
               <thead>
                 <tr>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th style={{ textAlign: 'right' }}>Monthly Rent</th>
+                  <th>Period</th>
+                  <th>Duration</th>
+                  <th>Monthly Rent</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {leases.map(lease => {
+                {unifiedHistory.map(row => {
                   const today = new Date().toISOString().split('T')[0]
-                  const active = lease.lease_start <= today && lease.lease_end >= today
+                  const isActive = row.type === 'lease' && row.start <= today && row.end >= today
+                  const isFuture = row.start > today
+
+                  // Calculate duration in days and months
+                  const startDate = parseISO(row.start)
+                  const endDate = parseISO(row.end)
+                  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+                  
+                  let durationStr = ''
+                  if (totalDays >= 365) {
+                    const yrs = Math.floor(totalDays / 365)
+                    const mos = Math.floor((totalDays % 365) / 30)
+                    durationStr = `${yrs}y ${mos}m`
+                  } else if (totalDays >= 30) {
+                    const mos = Math.floor(totalDays / 30)
+                    const days = totalDays % 30
+                    durationStr = `${mos}m ${days}d`
+                  } else {
+                    durationStr = `${totalDays}d`
+                  }
+                  
                   return (
-                    <tr key={lease.id}>
-                      <td className="td-mono">{formatDate(lease.lease_start)}</td>
-                      <td className="td-mono">{formatDate(lease.lease_end)}</td>
-                      <td className="td-mono text-green" style={{ textAlign: 'right', fontWeight: 600 }}>
-                        {formatCurrency(lease.monthly_rent)}
+                    <tr key={row.id} style={{ opacity: isFuture ? 0.5 : 1 }}>
+                      <td className="td-mono">
+                        {formatDate(row.start)} – {formatDate(row.end)}
+                      </td>
+                      <td className="td-mono" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        {durationStr}
+                      </td>
+                      <td className="td-mono" style={{ fontWeight: row.type === 'lease' ? 600 : 400 }}>
+                        {row.type === 'lease' ? formatCurrency(row.rent || 0) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                       </td>
                       <td>
-                        <span className={clsx('badge', active ? 'badge-income' : 'badge-neutral')}>
-                          {active ? 'Active' : 'Expired'}
+                        <span className={clsx('badge', 
+                          row.type === 'lease' ? (isActive ? 'badge-income' : 'badge-neutral') : 'badge-neutral'
+                        )} style={{ background: row.type === 'vacancy' ? 'rgba(234, 179, 8, 0.15)' : undefined, color: row.type === 'vacancy' ? 'var(--yellow)' : undefined }}>
+                          {row.type === 'lease' ? (isActive ? 'Active Lease' : 'Past Lease') : 'Vacant'}
                         </span>
                       </td>
                     </tr>
@@ -311,6 +407,118 @@ export default function PropertyDetails() {
           </div>
         )}
       </div>
+
+      {/* MODALS */}
+      <Modal 
+        title="Manage Quick Links" 
+        isOpen={isLinksModalOpen} 
+        onClose={() => setIsLinksModalOpen(false)}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {tempLinks.map((link, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input 
+                className="form-input"
+                placeholder="Label" 
+                value={link.label} 
+                onChange={e => {
+                  const val = e.target.value
+                  setTempLinks(prev => prev.map((l, i) => i === idx ? { ...l, label: val } : l))
+                }}
+              />
+              <input 
+                className="form-input" 
+                placeholder="URL" 
+                value={link.url} 
+                onChange={e => {
+                  const val = e.target.value
+                  setTempLinks(prev => prev.map((l, i) => i === idx ? { ...l, url: val } : l))
+                }}
+              />
+              <button 
+                className="btn btn-ghost btn-sm" 
+                style={{ color: 'var(--red)' }}
+                onClick={() => setTempLinks(prev => prev.filter((_, i) => i !== idx))}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button 
+            className="btn btn-outline btn-sm" 
+            style={{ marginTop: 8 }}
+            onClick={() => setTempLinks(prev => [...prev, { label: '', url: '' }])}
+          >
+            + Add Link
+          </button>
+          <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={saveLinks}>Save Changes</button>
+            <button className="btn btn-outline" onClick={() => setIsLinksModalOpen(false)}>Cancel</button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal 
+        title="Manage Contacts" 
+        isOpen={isContactsModalOpen} 
+        onClose={() => setIsContactsModalOpen(false)}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {tempContacts.map((contact, idx) => (
+            <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 12, position: 'relative' }}>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                style={{ position: 'absolute', top: 8, right: 8, color: 'var(--red)' }}
+                onClick={() => setTempContacts(prev => prev.filter((_, i) => i !== idx))}
+              >
+                ✕
+              </button>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Name</label>
+                  <input className="form-input" value={contact.name} onChange={e => {
+                    const val = e.target.value
+                    setTempContacts(prev => prev.map((c, i) => i === idx ? { ...c, name: val } : c))
+                  }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Role</label>
+                  <input className="form-input" value={contact.role} onChange={e => {
+                    const val = e.target.value
+                    setTempContacts(prev => prev.map((c, i) => i === idx ? { ...c, role: val } : c))
+                  }} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 12 }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Email</label>
+                  <input className="form-input" value={contact.email} onChange={e => {
+                    const val = e.target.value
+                    setTempContacts(prev => prev.map((c, i) => i === idx ? { ...c, email: val } : c))
+                  }} />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.7rem' }}>Phone</label>
+                  <input className="form-input" value={contact.phone} onChange={e => {
+                    const val = e.target.value
+                    setTempContacts(prev => prev.map((c, i) => i === idx ? { ...c, phone: val } : c))
+                  }} />
+                </div>
+              </div>
+            </div>
+          ))}
+          <button 
+            className="btn btn-outline btn-sm" 
+            onClick={() => setTempContacts(prev => [...prev, { name: '', role: '', email: '', phone: '' }])}
+          >
+            + Add Contact
+          </button>
+          <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={saveContacts}>Save Changes</button>
+            <button className="btn btn-outline" onClick={() => setIsContactsModalOpen(false)}>Cancel</button>
+          </div>
+        </div>
+      </Modal>
     </main>
   )
 }

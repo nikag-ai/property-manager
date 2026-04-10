@@ -16,6 +16,8 @@ export interface Property {
   selling_cost_pct: number
   hoa_amount: number
   mgmt_fee_pct: number
+  quick_links: { label: string; url: string }[] | null
+  important_contacts: { name: string; role: string; email: string; phone: string }[] | null
   created_at: string
 }
 

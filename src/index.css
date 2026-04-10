@@ -1253,3 +1253,138 @@ tbody tr:hover { background: var(--surface-2); }
 .tooltip-left[data-tooltip]:hover::after {
   transform: translateX(0) translateY(0);
 }
+
+/* ── Custom Form & Modal Styles ── */
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  transition: border-color var(--transition);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--blue);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.modal-overlay {
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Lease Timeline ── */
+.timeline-container {
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.timeline-bar {
+  position: relative;
+  display: flex;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+  z-index: 2;
+}
+
+.timeline-tick-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.timeline-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.timeline-labels-layer {
+  position: relative;
+  height: 24px;
+  margin-top: 8px;
+}
+
+.timeline-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.timeline-label.today {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+/* ── Enhanced Timeline Styling ── */
+.timeline-tick-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42px; /* Taller than the bar to allow bleed */
+  pointer-events: none;
+  z-index: 10;
+}
+
+.timeline-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  height: 38px; /* Bleeds 10px below the 28px bar */
+}
+
+.timeline-tick.milestone {
+  width: 2px;
+  background: var(--purple) !important;
+  opacity: 1;
+  z-index: 11;
+}
+
+.timeline-label {
+  position: absolute;
+  top: 8px; /* Offset to sit below the bleed */
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.timeline-label.milestone {
+  top: 14px; /* Lower than year labels to avoid density issues */
+  color: var(--purple-light, #c084fc);
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
