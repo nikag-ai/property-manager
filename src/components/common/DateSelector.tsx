@@ -130,9 +130,10 @@ export function DateSelector({ label, value, min, max, align = 'left', onChange 
                   key={i}
                   type="button"
                   className={`calendar-day ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''} ${!inMonth ? 'other-month' : ''}`}
-                  disabled={isDisabled}
+                  disabled={!!isDisabled}
                   onClick={() => handleSelect(day)}
                 >
+
                   {format(day, 'd')}
                 </button>
               )

@@ -1,13 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useProperty } from '../contexts/PropertyContext'
 import { useMetrics, useActiveLease } from '../hooks/useData'
 import { computeInvestmentIntelligence } from '../lib/calculations'
 import { formatCurrency, formatPct } from '../lib/utils'
 import { Link, useNavigate } from 'react-router-dom'
 import { InfoTooltip } from '../components/common/InfoTooltip'
-import { WealthCompositionChart } from '../components/charts/WealthCompositionChart'
-import { RentBreakdownChart } from '../components/charts/RentBreakdownChart'
-import { AdvisoryBoard } from '../components/intelligence/AdvisoryBoard'
 
 function MetricTile({ label, value, sub, color, tooltip, linkTo }: {
   label: string; value: string; sub?: string; color?: string; tooltip?: string; linkTo?: string
@@ -52,15 +49,7 @@ export default function IntelligenceHub() {
   const { data: metrics } = useMetrics(prop?.id ?? null)
   const activeLease = useActiveLease(prop?.id ?? null)
 
-  const [simRent, setSimRent] = useState<string>('')
-  const [simValue, setSimValue] = useState<string>('')
-  const [simOpEx, setSimOpEx] = useState<string>('')
-
-  const r = simRent ? parseFloat(simRent) : undefined
-  const v = simValue ? parseFloat(simValue) : undefined
-  const o = simOpEx ? parseFloat(simOpEx) : undefined
-
-  const calc = prop ? computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11, r, v, o) : null
+  const calc = prop ? computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11) : null
 
   const items = useMemo(() => {
     if (!prop || !calc) return []
@@ -351,7 +340,7 @@ export default function IntelligenceHub() {
     })
 
     return list
-  }, [prop, calc])
+  }, [prop, calc, metrics])
 
   if (!prop || !calc) return <div className="empty-state" style={{ marginTop: 80 }}><p>Loading...</p></div>
 
@@ -368,78 +357,6 @@ export default function IntelligenceHub() {
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 'var(--h1-size, 2rem)', marginBottom: 8 }}>Investment Intelligence Hub</h1>
         <p style={{ color: 'var(--text-muted)' }}>Institutional property metrics evaluated against industry benchmarks.</p>
-      </div>
-
-      {/* Scenario Simulator */}
-      <div className="card" style={{ marginBottom: 48, border: '2px solid var(--purple)', padding: '24px' }}>
-        <h3 style={{ fontSize: '1.2rem', color: 'var(--purple)', marginBottom: 16 }}>✨ Scenario Simulator</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-          <div>
-            <label className="form-label">Monthly Rent</label>
-            <input type="number" className="form-input" placeholder={activeLease?.monthly_rent.toString()} value={simRent} onChange={e => setSimRent(e.target.value)} />
-          </div>
-          <div>
-            <label className="form-label">Property Value</label>
-            <input type="number" className="form-input" placeholder={prop.current_value?.toString()} value={simValue} onChange={e => setSimValue(e.target.value)} />
-          </div>
-          <div>
-            <label className="form-label">Annual Operating Exp.</label>
-            <input type="number" className="form-input" placeholder={calc.annualOpExp.toFixed(0)} value={simOpEx} onChange={e => setSimOpEx(e.target.value)} />
-          </div>
-          {(simRent || simValue || simOpEx) && (
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <button className="btn btn-outline btn-sm" onClick={() => { setSimRent(''); setSimValue(''); setSimOpEx('') }}>Reset Simulation</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <h3 style={{ fontSize: '1.2rem', marginBottom: 20 }}>Advisory & Insights</h3>
-      <AdvisoryBoard data={{
-        dscr: calc.dscr,
-        ltv: calc.ltv,
-        capRate: calc.capRate,
-        maintPct: metrics?.maintenance_pct_ttm ?? 0,
-        annualCF: calc.annualCF,
-        equityAcc: calc.equityAccRate,
-        refiEquity: calc.refiEquity
-      }} />
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 32, marginBottom: 56 }}>
-        <div className="card">
-          <h3 style={{ fontSize: '1rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-            📂 Wealth Composition & Projections
-            <InfoTooltip content="Visualize how your equity is split between original cash, principal paid, and market appreciation, with 30-year projections." />
-          </h3>
-          <WealthCompositionChart data={{ timeline: calc.wealthProjection }} />
-        </div>
-
-        <div className="card">
-          <h3 style={{ fontSize: '1rem', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-            💸 Monthly Rent Allocation
-            <InfoTooltip content="See exactly where every dollar of your rent goes. Click segments to jump to the ledger." />
-          </h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>*Interactive: Click a segment to filter ledger</p>
-          <div style={{ cursor: 'pointer' }}>
-            <RentBreakdownChart 
-              data={{
-                interest: calc.allocInterest,
-                principal: calc.allocPrincipal,
-                taxes: calc.allocTaxesIns,
-                opex: calc.allocOpEx,
-                net: calc.allocNetCF,
-                total: calc.monthlyRent
-              }} 
-              onSegmentClick={(segmentName) => {
-                let tagList = ''
-                if (segmentName.includes('Interest') || segmentName.includes('Principal')) tagList = '&tag=Mortgage'
-                if (segmentName.includes('OpEx')) tagList = '&tag=Management&tag=Maintenance'
-                if (segmentName.includes('Taxes')) tagList = '&tag=HOA&tag=Tax'
-                navigate(`/monthly?view=ledger${tagList}`)
-              }}
-            />
-          </div>
-        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>

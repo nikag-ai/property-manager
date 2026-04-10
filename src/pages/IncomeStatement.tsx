@@ -2,7 +2,8 @@ import { useState, useMemo, Fragment } from 'react'
 
 import { useProperty } from '../contexts/PropertyContext'
 import { useTransactions, useTags } from '../hooks/useData'
-import { formatCurrency, formatMonthLabel } from '../lib/utils'
+import { formatCurrency } from '../lib/utils'
+
 import { MonthSelector } from '../components/common/MonthSelector'
 
 
