@@ -8,50 +8,85 @@ import { formatCurrency } from '../lib/utils'
 import { TransactionTable } from '../components/ledger/TransactionTable'
 import type { TransactionFilters } from '../lib/types'
 
-const formatMonth = (m: string) => {
-  const [yy, mm] = m.split('-')
-  const date = new Date(Number(yy), Number(mm) - 1)
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+const formatDate = (d: string) => {
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric' 
+  })
 }
+
 
 export default function Ledger() {
   const { activePropertyId: propId } = useProperty()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const initMonth = searchParams.get('month') ?? ''
-  const initTags  = searchParams.getAll('tag')
-  const initSearch = searchParams.get('search') ?? ''
+  const initFrom = searchParams.get('from') || ''
+  const initTo   = searchParams.get('to') || ''
+  const initTags = searchParams.getAll('tag')
+  const initSearch = searchParams.get('search') || ''
+  const initMonth = searchParams.get('month') // Legacy month param
 
-  const [filters, setFilters] = useState<TransactionFilters>({
-    month: initMonth || undefined,
-    tags: initTags.length > 0 ? initTags : undefined,
-    search: initSearch || undefined
+  const [filters, setFilters] = useState<TransactionFilters>(() => {
+    let from = initFrom
+    let to = initTo
+
+    // Handle legacy month param if present
+    if (initMonth && !from && !to) {
+      const [yy, mm] = initMonth.split('-')
+      from = `${initMonth}-01`
+      const lastDay = new Date(Number(yy), Number(mm), 0).getDate()
+      to = `${initMonth}-${lastDay}`
+    }
+
+    return {
+      date_from: from || undefined,
+      date_to: to || undefined,
+      tags: initTags.length > 0 ? initTags : undefined,
+      search: initSearch || undefined
+    }
   })
 
   const [tagInput, setTagInput] = useState('')
   const includeClosingCosts = searchParams.get('allIn') !== 'false'
 
-
-
-  // Sync URL -> state
+  // Sync URL -> state on change
   useEffect(() => {
-    const m = searchParams.get('month')
+    const f = searchParams.get('from')
+    const t = searchParams.get('to')
     const s = searchParams.get('search')
+    const m = searchParams.get('month')
     const urlTags = searchParams.getAll('tag')
     
-    setFilters(f => ({ 
-      ...f, 
-      month: m || undefined,
-      search: s || undefined,
-      tags: urlTags.length > 0 ? urlTags : undefined
-    }))
+    setFilters(prev => {
+      let from = f
+      let to = t
+      if (m && !f && !t) {
+        const [yy, mm] = m.split('-')
+        from = `${m}-01`
+        to = `${m}-${new Date(Number(yy), Number(mm), 0).getDate()}`
+      }
+      return { 
+        ...prev, 
+        date_from: from || undefined,
+        date_to: to || undefined,
+        search: s || undefined,
+        tags: urlTags.length > 0 ? urlTags : undefined
+      }
+    })
   }, [searchParams])
+
 
   // Sync filters -> URL 
   const updateUrl = (newFilters: TransactionFilters) => {
     setSearchParams(prev => {
-      if (newFilters.month) prev.set('month', newFilters.month)
-      else prev.delete('month')
+      if (newFilters.date_from) prev.set('from', newFilters.date_from)
+      else prev.delete('from')
+      
+      if (newFilters.date_to) prev.set('to', newFilters.date_to)
+      else prev.delete('to')
+
+      prev.delete('month') // Clean up legacy month param if it exists
       
       if (newFilters.search) prev.set('search', newFilters.search)
       else prev.delete('search')
@@ -62,6 +97,7 @@ export default function Ledger() {
       return prev
     }, { replace: true })
   }
+
 
   const { data: transactions = [], isLoading: txLoading } = useTransactions(propId, filters)
   const { data: availableTags = [] } = useActiveTags(propId)
@@ -107,16 +143,26 @@ export default function Ledger() {
 
 
       <div className="card">
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ flex: '1 1 120px' }}>
-            <label className="form-label">Month</label>
-            <input type="month" className="form-input" value={filters.month ?? ''}
-              onChange={e => {
-                const next = { ...filters, month: e.target.value || undefined }
-                setFilters(next)
-                updateUrl(next)
-              }} />
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
+          <div className="form-group" style={{ flex: '1 1 240px' }}>
+            <label className="form-label">Date Range</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="date" className="form-input" value={filters.date_from ?? ''}
+                onChange={e => {
+                  const next = { ...filters, date_from: e.target.value || undefined }
+                  setFilters(next)
+                  updateUrl(next)
+                }} />
+              <span style={{ color: 'var(--text-muted)' }}>–</span>
+              <input type="date" className="form-input" value={filters.date_to ?? ''}
+                onChange={e => {
+                  const next = { ...filters, date_to: e.target.value || undefined }
+                  setFilters(next)
+                  updateUrl(next)
+                }} />
+            </div>
           </div>
+
 
           <div className="form-group" style={{ flex: '1 1 200px', position: 'relative' }}>
             <label className="form-label">Tags</label>
@@ -170,17 +216,29 @@ export default function Ledger() {
 
           {hasFilters && (
             <>
-              {filters.month && (
+              {filters.date_from && (
                 <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Month:</span>
-                  <span style={{ fontWeight: 600 }}>{formatMonth(filters.month)}</span>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>From:</span>
+                  <span style={{ fontWeight: 600 }}>{formatDate(filters.date_from)}</span>
                   <button onClick={() => {
-                    const next = { ...filters, month: undefined }
+                    const next = { ...filters, date_from: undefined }
                     setFilters(next)
                     updateUrl(next)
                   }} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
                 </div>
               )}
+              {filters.date_to && (
+                <div className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>To:</span>
+                  <span style={{ fontWeight: 600 }}>{formatDate(filters.date_to)}</span>
+                  <button onClick={() => {
+                    const next = { ...filters, date_to: undefined }
+                    setFilters(next)
+                    updateUrl(next)
+                  }} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>✕</button>
+                </div>
+              )}
+
               {filters.tags?.map(tag => (
                 <div key={tag} className="badge badge-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 16, background: 'var(--surface-3)', border: '1px solid var(--border)' }}>
                   <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Tag:</span>

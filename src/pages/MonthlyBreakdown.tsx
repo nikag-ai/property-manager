@@ -146,9 +146,14 @@ export default function MonthlyBreakdown() {
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                     onClick={() => {
                       const m = row.month.substring(0, 7)
+                      const [yy, mm] = m.split('-')
+                      const lastDay = new Date(Number(yy), Number(mm), 0).getDate()
+                      const from = `${m}-01`
+                      const to = `${m}-${lastDay}`
                       // Navigate to dedicated ledger page
-                      navigate(`/ledger?month=${m}${!includeClosingCosts ? '&allIn=false' : ''}`)
+                      navigate(`/ledger?from=${from}&to=${to}${!includeClosingCosts ? '&allIn=false' : ''}`)
                     }}
+
 
 
                   >
