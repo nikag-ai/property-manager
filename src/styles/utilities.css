@@ -1,0 +1,85 @@
+/* ── Utilities ───────────────────────────────────────────── */
+.desktop-only { display: none; }
+@media (min-width: 640px) { .desktop-only { display: inline-flex; } }
+
+.mobile-only { display: inline-flex; }
+@media (min-width: 640px) { .mobile-only { display: none; } }
+
+.ml-auto-desktop { margin-left: 0; }
+@media (min-width: 768px) { .ml-auto-desktop { margin-left: auto; } }
+
+/* ── Stat rows ───────────────────────────────────────────── */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.items-baseline { align-items: baseline; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.gap-5 { gap: var(--space-5); }
+.gap-6 { gap: var(--space-6); }
+.flex-1 { flex: 1; }
+.w-full { width: 100%; }
+.mt-4 { margin-top: var(--space-4); }
+.mt-6 { margin-top: var(--space-6); }
+.mb-4 { margin-bottom: var(--space-4); }
+.mb-6 { margin-bottom: var(--space-6); }
+.p-4 { padding: var(--space-4); }
+.p-5 { padding: var(--space-5); }
+.p-6 { padding: var(--space-6); }
+
+/* ── Skeleton loading ────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Empty state ─────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12);
+  gap: var(--space-3);
+  color: var(--text-subtle);
+  text-align: center;
+}
+.empty-state svg { opacity: 0.4; }
+
+/* ── Divider ─────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-5) 0;
+}
+
+/* ── Inline editable ─────────────────────────────────────── */
+.editable-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  transition: background var(--transition);
+}
+.editable-field:hover { background: var(--surface-2); }
+.editable-field input {
+  background: var(--surface-2);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 2px 8px;
+  outline: none;
+  width: 140px;
+  box-shadow: 0 0 0 3px rgba(88,166,255,0.2);
+}

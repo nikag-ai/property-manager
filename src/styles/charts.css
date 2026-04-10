@@ -1,0 +1,126 @@
+/* ── Recharts overrides ───────────────────────────────────  */
+.recharts-tooltip-wrapper { outline: none !important; }
+
+.recharts-default-tooltip {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: var(--space-3) var(--space-4) !important;
+}
+
+.recharts-tooltip-label { color: var(--text-muted) !important; font-size: 0.75rem !important; }
+
+/* ── Custom Tooltip (data-tooltip) ───────────────────────── */
+[data-tooltip] {
+  position: relative;
+  cursor: pointer;
+}
+
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  padding: 8px 12px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  white-space: normal;
+  width: 240px;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  text-align: center;
+  pointer-events: none;
+  line-height: 1.4;
+}
+
+[data-tooltip]::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--surface-3) transparent transparent transparent;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  pointer-events: none;
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Info Tooltip (Circular triggers) */
+.info-tooltip-wrap {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+.info-tooltip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-subtle);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: help;
+  user-select: none;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.info-tooltip-wrap:hover .info-tooltip-btn {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.info-tooltip-box {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 220px;
+  max-width: 300px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+  box-shadow: var(--shadow-md);
+  white-space: normal;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.info-tooltip-wrap:hover .info-tooltip-box {
+  opacity: 1;
+  visibility: visible;
+}

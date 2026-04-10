@@ -1,0 +1,68 @@
+/* ── Tokens ──────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --bg:           #0D1117;
+  --surface:      #161B22;
+  --surface-2:    #1C2128;
+  --surface-3:    #21262D;
+  --border:       #30363D;
+  --border-subtle:#21262D;
+
+  /* Text */
+  --text:         #E6EDF3;
+  --text-muted:   #8B949E;
+  --text-subtle:  #6E7681;
+
+  /* Semantic colors */
+  --green:        #3FB950;
+  --green-dim:    #1A3829;
+  --red:          #F85149;
+  --red-dim:      #3D1E1D;
+  --yellow:       #D29922;
+  --yellow-dim:   #2D2010;
+  --blue:         #58A6FF;
+  --blue-dim:     #1A2D4A;
+  --purple:       #BC8CFF;
+  --purple-dim:   #2C1E40;
+  --teal:         #39D353;
+  --orange:       #E3B341;
+
+  /* KPI card accent colors */
+  --kpi-equity:    var(--purple);
+  --kpi-cashflow:  var(--green);
+  --kpi-vacancy:   var(--yellow);
+  --kpi-loan:      var(--blue);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Shadows */
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md:   0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
+  --shadow-card: 0 0 0 1px var(--border), 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-glow-green:  0 0 20px rgba(63,185,80,0.15);
+  --shadow-glow-purple: 0 0 20px rgba(188,140,255,0.15);
+  --shadow-glow-blue:   0 0 20px rgba(88,166,255,0.15);
+
+  /* Transitions */
+  --transition: 150ms cubic-bezier(0.4,0,0.2,1);
+  --transition-slow: 300ms cubic-bezier(0.4,0,0.2,1);
+}
