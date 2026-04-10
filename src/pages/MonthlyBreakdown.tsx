@@ -156,8 +156,14 @@ export default function MonthlyBreakdown() {
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--surface-2)'}
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                     onClick={() => {
-                      setFilters(f => ({ ...f, month: row.month.substring(0, 7) }))
-                      switchView('ledger')
+                      const m = row.month.substring(0, 7)
+                      setFilters(f => ({ ...f, month: m }))
+                      setSearchParams(prev => {
+                        prev.set('view', 'ledger')
+                        prev.set('month', m)
+                        return prev
+                      }, { replace: true })
+                      setViewMode('ledger')
                     }}
                   >
                     <td style={{ fontWeight: 600 }}>{formatMonth(row.month)}</td>
