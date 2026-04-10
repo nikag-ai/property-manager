@@ -57,21 +57,16 @@ export default function MonthlyBreakdown() {
     if (!monthlySummary || monthlySummary.length === 0) return []
     // Sort chronologically (oldest to newest) to calculate running total
     const chronological = [...monthlySummary].sort((a, b) => a.month.localeCompare(b.month))
-    let cumWithout = 0
-    let cumWith = 0
+    let cum = 0
     return chronological.map(row => {
       const cc = includeClosingCosts ? (row.closing_costs || 0) : 0
       const net = row.net_cash_flow - cc
-      
-      cumWithout += net // pure cash flow (principal treated as expense)
-      cumWith += (net + row.principal_paid) // total equity/cash build up (principal retained)
-
+      cum += net
       return { 
         ...row, 
         display_expenses: row.expenses - cc, 
         display_net: net,
-        cumulative_cf_without: cumWithout,
-        cumulative_cf_with: cumWith
+        cumulative_cf: cum 
       }
     }).reverse() // Display newest at the top
   }, [monthlySummary, includeClosingCosts])
@@ -150,8 +145,7 @@ export default function MonthlyBreakdown() {
                   <th style={{ textAlign: 'right' }}>Principal</th>
                   <th style={{ textAlign: 'right' }}>Interest</th>
                   <th style={{ textAlign: 'right' }}>Net Cash Flow</th>
-                  <th style={{ textAlign: 'right', color: 'var(--purple)' }}>Cumulative CF (with Principal)</th>
-                  <th style={{ textAlign: 'right', color: 'var(--orange)' }}>Cumulative CF (without Principal)</th>
+                  <th style={{ textAlign: 'right', color: 'var(--purple)' }}>Cumulative CF</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,10 +176,7 @@ export default function MonthlyBreakdown() {
                       {formatCurrency(row.display_net)}
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--purple)', fontFamily: 'var(--font-mono)' }}>
-                      {formatCurrency(row.cumulative_cf_with)}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--orange)', fontFamily: 'var(--font-mono)' }}>
-                      {formatCurrency(row.cumulative_cf_without)}
+                      {formatCurrency(row.cumulative_cf)}
                     </td>
                   </tr>
                 ))}
