@@ -300,6 +300,43 @@ h4 { font-size: 0.8125rem; font-weight: 600; }
   opacity: 0.5;
 }
 
+/* Month & Year Selection Grids */
+.month-grid, .year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.picker-cell {
+  padding: 12px 8px;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.picker-cell:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border);
+}
+
+.picker-cell.active {
+  background: var(--purple);
+  color: white;
+  font-weight: 600;
+}
+
+.picker-cell:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+
 
 .picker-header {
   display: flex;
