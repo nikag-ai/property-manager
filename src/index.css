@@ -140,6 +140,12 @@ h4 { font-size: 0.8125rem; font-weight: 600; }
   padding: var(--space-4) var(--space-4) var(--space-10);
 }
 
+.page-content-full {
+  max-width: none;
+  margin: 0;
+}
+
+
 @media (min-width: 768px) {
   .page-content {
     padding: var(--space-6) var(--space-6) var(--space-10);

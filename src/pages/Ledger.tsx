@@ -136,7 +136,8 @@ export default function Ledger() {
   const hasFilters = Object.values(filters).some(v => v !== undefined && v !== '')
 
   return (
-    <main className="page-content">
+    <main className="page-content page-content-full">
+
       <div className="section-header" style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: '1.25rem' }}>Full Ledger</h1>
       </div>

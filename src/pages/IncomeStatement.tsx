@@ -100,7 +100,8 @@ export default function IncomeStatement() {
   if (!propId) return <div className="page-content">Please select a property.</div>
 
   return (
-    <main className="page-content">
+    <main className="page-content page-content-full">
+
       <div className="section-header" style={{ marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: '1.25rem' }}>Income Statement</h1>
         

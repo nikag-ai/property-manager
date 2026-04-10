@@ -11,7 +11,9 @@ interface RuleFormValues {
   amount: string
   tag_id: string
   post_day: string
+  is_last_day: boolean
 }
+
 
 export function AutoPostManager() {
   const { activePropertyId: propId } = useProperty()
@@ -25,7 +27,9 @@ export function AutoPostManager() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
 
-  const { register, handleSubmit, reset, setValue } = useForm<RuleFormValues>()
+  const { register, handleSubmit, reset, setValue, watch } = useForm<RuleFormValues>()
+  const watchLastDay = watch('is_last_day')
+
 
   const onSave = async (data: RuleFormValues) => {
     if (!propId) return
@@ -36,11 +40,12 @@ export function AutoPostManager() {
       amount: parseFloat(data.amount),
       tag_id: data.tag_id,
       tag_name: tag?.name ?? '',
-      post_day: parseInt(data.post_day),
+      post_day: data.is_last_day ? 0 : parseInt(data.post_day),
       is_active: true,
       is_amortized: false,
       breakdown_template: null,
     }
+
 
     if (editingId) {
       await updateRule.mutateAsync({ id: editingId, patch: payload })
@@ -57,8 +62,10 @@ export function AutoPostManager() {
     setValue('label', rule.label)
     setValue('amount', String(rule.amount))
     setValue('tag_id', rule.tag_id)
-    setValue('post_day', String(rule.post_day))
+    setValue('post_day', rule.post_day === 0 ? '' : String(rule.post_day))
+    setValue('is_last_day', rule.post_day === 0)
   }
+
 
   const cancel = () => {
     setEditingId(null)
@@ -104,9 +111,23 @@ export function AutoPostManager() {
             </div>
             <div className="form-group">
               <label className="form-label">Day of Month</label>
-              <input {...register('post_day', { required: true, min: 1, max: 31 })} type="number" className="form-input" placeholder="1" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input 
+                  {...register('post_day', { min: 1, max: 31 })} 
+                  type="number" 
+                  className="form-input" 
+                  placeholder="1" 
+                  disabled={watchLastDay}
+                  style={{ width: '80px' }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', cursor: 'pointer' }}>
+                  <input type="checkbox" {...register('is_last_day')} />
+                  Last Day
+                </label>
+              </div>
             </div>
           </div>
+
 
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button type="submit" className="btn btn-primary btn-sm" disabled={addRule.isPending || updateRule.isPending}>
@@ -127,8 +148,9 @@ export function AutoPostManager() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{rule.label}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>
-                     {rule.tag_name} • Monthly on day {rule.post_day}
+                     {rule.tag_name} • Monthly on {rule.post_day === 0 ? 'last day' : `day ${rule.post_day}`}
                   </div>
+
                 </div>
                 <div className={clsx('td-mono', rule.amount >= 0 ? 'text-green' : 'text-red')} style={{ fontWeight: 600, marginRight: 16 }}>
                   {formatCurrency(rule.amount)}
