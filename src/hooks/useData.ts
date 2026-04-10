@@ -89,6 +89,21 @@ export function useAddTransaction() {
   })
 }
 
+export function useUpdateTransaction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string, propertyId: string, patch: Partial<Transaction> }) => {
+      const { error } = await supabase.from('transactions').update(patch).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: keys.transactions(vars.propertyId) })
+      qc.invalidateQueries({ queryKey: keys.metrics(vars.propertyId) })
+      qc.invalidateQueries({ queryKey: keys.monthly(vars.propertyId) })
+    },
+  })
+}
+
 // ── AMORTIZATION ──────────────────────────────────────────────────────────────
 export function useAmortization(propertyId: string | null) {
   return useQuery({

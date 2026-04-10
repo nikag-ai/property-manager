@@ -60,16 +60,27 @@ export default function MonthlyBreakdown() {
     let cum = 0
     return chronological.map(row => {
       const cc = includeClosingCosts ? (row.closing_costs || 0) : 0
-      const net = row.net_cash_flow - cc
-      cum += net
+      
+      // Treat principal as an expense
+      const principal = row.principal_paid || 0;
+      const net = row.net_cash_flow - cc - principal;
+      cum += net;
+
       return { 
         ...row, 
-        display_expenses: row.expenses - cc, 
+        expenses: row.expenses - principal,
+        net_cash_flow: net,
+        display_expenses: row.expenses - cc - principal, 
         display_net: net,
         cumulative_cf: cum 
       }
     }).reverse() // Display newest at the top
   }, [monthlySummary, includeClosingCosts])
+
+  // Prepare chronological data for the chart that includes the modified expenses and net_cash_flow
+  const chartData = useMemo(() => {
+    return [...summaryWithCumulative].reverse()
+  }, [summaryWithCumulative])
 
   const hasFilters = Object.values(filters).some(v => v !== undefined && v !== '')
 
@@ -128,7 +139,7 @@ export default function MonthlyBreakdown() {
           <h3 style={{ marginBottom: 20 }}>Cash Flow by Month</h3>
           {chartLoading
             ? <div className="skeleton" style={{ height: 320 }} />
-            : <CashFlowChart data={monthlySummary} />
+            : <CashFlowChart data={chartData} />
           }
         </div>
       ) : viewMode === 'table' ? (
@@ -162,7 +173,7 @@ export default function MonthlyBreakdown() {
                         prev.set('view', 'ledger')
                         prev.set('month', m)
                         return prev
-                      }, { replace: true })
+                      }) // Replaced so drill-down adds to history
                       setViewMode('ledger')
                     }}
                   >

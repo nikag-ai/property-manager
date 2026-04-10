@@ -4,6 +4,7 @@ import { formatDate, formatCurrency, colorClass, downloadBlob } from '../../lib/
 import Papa from 'papaparse'
 import clsx from 'clsx'
 import { InfoTooltip } from '../common/InfoTooltip'
+import { useUpdateTransaction } from '../../hooks/useData'
 
 interface TransactionTableProps {
   transactions: Transaction[]
@@ -14,6 +15,10 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
+
+  const updateTx = useUpdateTransaction()
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editAmount, setEditAmount] = useState<string>('')
 
   const totalPages = Math.ceil(transactions.length / pageSize)
   const paginated = transactions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -80,7 +85,7 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
               <th>Tag</th>
               <th>Notes</th>
               <th style={{ textAlign: 'right' }}>Amount</th>
-              <th style={{ width: 40 }}></th>
+              <th style={{ width: 64, textAlign: 'right' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -111,16 +116,58 @@ export function TransactionTable({ transactions, isLoading }: TransactionTablePr
                     {t.notes}
                   </td>
                   <td className={clsx('td-mono', colorClass(t.amount))} style={{ textAlign: 'right', fontWeight: 600 }}>
-                    {t.amount >= 0 ? '+' : ''}{formatCurrency(t.amount)}
-                  </td>
-                  <td>
-                    {t.is_auto_posted && (
-                      <span className="info-tooltip-wrap plain-trigger tooltip-left">
-                        <InfoTooltip content="Auto-posted: This transaction was automatically generated based on your recurring rules or loan amortization schedule.">
-                          <span style={{ color: 'var(--blue)', fontSize: '0.9rem' }}>⚡</span>
-                        </InfoTooltip>
-                      </span>
+                    {editId === t.id ? (
+                      <input
+                        type="number"
+                        step="any"
+                        className="form-input td-mono"
+                        style={{ width: 90, textAlign: 'right', padding: '2px 6px', height: 26, fontSize: '0.8125rem' }}
+                        autoFocus
+                        value={editAmount}
+                        onChange={e => setEditAmount(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const val = parseFloat(editAmount)
+                            if (!isNaN(val)) updateTx.mutate({ id: t.id, propertyId: t.property_id, patch: { amount: val } })
+                            setEditId(null)
+                          } else if (e.key === 'Escape') {
+                            setEditId(null)
+                          }
+                        }}
+                        onBlur={() => setEditId(null)}
+                      />
+                    ) : (
+                      <>{t.amount >= 0 ? '+' : ''}{formatCurrency(t.amount)}</>
                     )}
+                  </td>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                      {t.is_auto_posted && (
+                        <span className="info-tooltip-wrap plain-trigger tooltip-left">
+                          <InfoTooltip content="Auto-posted: This transaction was automatically generated based on your recurring rules or loan amortization schedule.">
+                            <span style={{ color: 'var(--blue)', fontSize: '0.9rem' }}>⚡</span>
+                          </InfoTooltip>
+                        </span>
+                      )}
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ padding: '0 4px', fontSize: '0.9rem', opacity: editId === t.id ? 1 : 0.4 }}
+                        onMouseDown={e => e.preventDefault()} // prevent blur
+                        onClick={() => {
+                          if (editId === t.id) {
+                            const val = parseFloat(editAmount)
+                            if (!isNaN(val)) updateTx.mutate({ id: t.id, propertyId: t.property_id, patch: { amount: val } })
+                            setEditId(null)
+                          } else {
+                            setEditId(t.id)
+                            setEditAmount(t.amount.toString())
+                          }
+                        }}
+                        title={editId === t.id ? 'Save' : 'Edit amount'}
+                      >
+                        {editId === t.id ? '💾' : '✏️'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 {expanded.has(t.id) && t.breakdown && (
