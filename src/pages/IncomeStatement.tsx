@@ -143,10 +143,11 @@ export default function IncomeStatement() {
                   
                   {Object.entries(reportData.income).map(([group, leaves]: [string, any]) => {
                     const groupTotals = months.reduce((acc, m) => {
-                      acc[m] = Object.values(leaves).reduce((sum, leaf: any) => sum + (leaf[m] || 0), 0)
+                      acc[m] = Object.values(leaves).reduce((sum: number, leaf: any) => sum + (leaf[m] || 0), 0)
                       return acc
                     }, {} as any)
                     const groupGrandTotal = Object.values(groupTotals).reduce((a: any, b: any) => a + b, 0) as number
+
 
                     return (
                       <Fragment key={group}>
@@ -173,16 +174,18 @@ export default function IncomeStatement() {
                   <tr className="is-total-row">
                     <td style={{ paddingLeft: 20 }}>Total Operating Income</td>
                     {months.map(m => {
-                      const mTotal = Object.values(reportData.income).reduce((sum, leaves: any) => 
-                        sum + Object.values(leaves).reduce((s, leaf: any) => s + (leaf[m] || 0), 0)
+                      const mTotal = Object.values(reportData.income).reduce((sum: number, leaves: any) => 
+                        sum + Object.values(leaves).reduce((s: number, leaf: any) => s + (leaf[m] || 0), 0)
                       , 0) as number
                       return <td key={m} style={{ textAlign: 'right' }}>{formatCurrency(mTotal)}</td>
                     })}
+
                     <td style={{ textAlign: 'right' }}>
-                      {formatCurrency(Object.values(reportData.income).reduce((sum, leaves: any) => 
-                        sum + Object.values(leaves).reduce((s, leaf: any) => s + Object.values(leaf).reduce((a:any,b:any)=>a+b,0), 0)
+                      {formatCurrency(Object.values(reportData.income).reduce((sum: number, leaves: any) => 
+                        sum + Object.values(leaves).reduce((s: number, leaf: any) => s + Object.values(leaf).reduce((a: number, b: any) => a + b, 0), 0)
                       , 0) as number)}
                     </td>
+
                   </tr>
 
                   {/* EXPENSE SECTION */}
@@ -190,10 +193,11 @@ export default function IncomeStatement() {
                   
                   {Object.entries(reportData.expense).map(([group, leaves]: [string, any]) => {
                     const groupTotals = months.reduce((acc, m) => {
-                      acc[m] = Object.values(leaves).reduce((sum, leaf: any) => sum + (leaf[m] || 0), 0)
+                      acc[m] = Object.values(leaves).reduce((sum: number, leaf: any) => sum + (leaf[m] || 0), 0)
                       return acc
                     }, {} as any)
                     const groupGrandTotal = Object.values(groupTotals).reduce((a: any, b: any) => a + b, 0) as number
+
 
                     return (
                       <Fragment key={group}>
@@ -220,39 +224,43 @@ export default function IncomeStatement() {
                   <tr className="is-total-row">
                     <td style={{ paddingLeft: 20 }}>Total Operating Expense</td>
                     {months.map(m => {
-                      const mTotal = Object.values(reportData.expense).reduce((sum, leaves: any) => 
-                        sum + Object.values(leaves).reduce((s, leaf: any) => s + (leaf[m] || 0), 0)
+                      const mTotal = Object.values(reportData.expense).reduce((sum: number, leaves: any) => 
+                        sum + Object.values(leaves).reduce((s: number, leaf: any) => s + (leaf[m] || 0), 0)
                       , 0) as number
                       return <td key={m} style={{ textAlign: 'right' }}>{formatCurrency(Math.abs(mTotal))}</td>
                     })}
+
                     <td style={{ textAlign: 'right' }}>
-                      {formatCurrency(Math.abs(Object.values(reportData.expense).reduce((sum, leaves: any) => 
-                        sum + Object.values(leaves).reduce((s, leaf: any) => s + Object.values(leaf).reduce((a:any,b:any)=>a+b,0), 0)
+                      {formatCurrency(Math.abs(Object.values(reportData.expense).reduce((sum: number, leaves: any) => 
+                        sum + Object.values(leaves).reduce((s: number, leaf: any) => s + Object.values(leaf).reduce((a: number, b: any) => a + b, 0), 0)
                       , 0) as number))}
                     </td>
+
                   </tr>
 
                   {/* NET INCOME */}
                   <tr className="is-net-row">
                     <td style={{ paddingLeft: 20 }}>Net Operating Income (NOI)</td>
                     {months.map(m => {
-                      const inc = Object.values(reportData.income).reduce((sum, leaves: any) => 
-                        sum + Object.values(leaves).reduce((s, leaf: any) => s + (leaf[m] || 0), 0)
+                      const inc = Object.values(reportData.income).reduce((sum: number, leaves: any) => 
+                        sum + Object.values(leaves).reduce((s: number, leaf: any) => s + (leaf[m] || 0), 0)
                       , 0) as number
-                      const exp = Object.values(reportData.expense).reduce((sum, leaves: any) => 
-                        sum + Object.values(leaves).reduce((s, leaf: any) => s + (leaf[m] || 0), 0)
+                      const exp = Object.values(reportData.expense).reduce((sum: number, leaves: any) => 
+                        sum + Object.values(leaves).reduce((s: number, leaf: any) => s + (leaf[m] || 0), 0)
                       , 0) as number
                       return <td key={m} style={{ textAlign: 'right' }}>{formatCurrency(inc + exp)}</td>
                     })}
+
                     <td style={{ textAlign: 'right', borderTop: '2px solid var(--text)' }}>
                       {formatCurrency(
-                        Object.values(reportData.income).reduce((sum, leaves: any) => 
-                          sum + Object.values(leaves).reduce((s, leaf: any) => s + Object.values(leaf).reduce((a:any,b:any)=>a+b,0), 0)
+                        Object.values(reportData.income).reduce((sum: number, leaves: any) => 
+                          sum + Object.values(leaves).reduce((s: number, leaf: any) => s + Object.values(leaf).reduce((a: number, b: any) => a + b, 0), 0)
                         , 0) as number +
-                        Object.values(reportData.expense).reduce((sum, leaves: any) => 
-                          sum + Object.values(leaves).reduce((s, leaf: any) => s + Object.values(leaf).reduce((a:any,b:any)=>a+b,0), 0)
+                        Object.values(reportData.expense).reduce((sum: number, leaves: any) => 
+                          sum + Object.values(leaves).reduce((s: number, leaf: any) => s + Object.values(leaf).reduce((a: number, b: any) => a + b, 0), 0)
                         , 0) as number
                       )}
+
                     </td>
                   </tr>
                 </>

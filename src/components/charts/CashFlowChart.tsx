@@ -23,18 +23,13 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
-// Helper to ensure both axes share the same zero line position
-const getSymmetricalDomain = (data: any[], key: string) => {
-  const values = data.map((d: any) => d[key])
-  const min = Math.min(0, ...values)
-  const max = Math.max(0, ...values)
-  
-  // To align zeros, we need to find the furthest side from zero
-  // and scale the other side to keep the proportions.
-  return [min || 'auto', max || 'auto'] as const
+interface CashFlowChartProps {
+  data: (MonthlySummary & { cumulative_cf: number })[]
 }
 
+
 export function CashFlowChart({ data }: CashFlowChartProps) {
+
   const navigate = useNavigate()
 
   const chartData = data.map((d: any) => ({
