@@ -104,28 +104,12 @@ export default function Overview() {
 
       let effectiveAmount = tx.amount
       
-      // For mortgage payments with breakdown, only count Interest and Escrow as expenses
-      // Principal is an investment in equity, not an operational loss.
-      if (tx.breakdown) {
-        try {
-          const b = Array.isArray(tx.breakdown) ? tx.breakdown : typeof tx.breakdown === 'string' ? JSON.parse(tx.breakdown) : []
-          const intEsc = b
-            .filter((item: any) => item.label === 'Interest' || item.label === 'Escrow')
-            .reduce((s: number, item: any) => s + (item.amount || 0), 0)
-          
-          if (tx.amount < 0) {
-            effectiveAmount = -intEsc
-          }
-        } catch (e) {
-          console.error("Error parsing breakdown for summary", e)
-        }
-      }
-
       if (effectiveAmount > 0) acc.income += effectiveAmount
       else acc.expenses += Math.abs(effectiveAmount)
       acc.cashflow += effectiveAmount
       return acc
     }, { income: 0, expenses: 0, cashflow: 0 })
+
   }, [activityTxns])
 
   const calc = computeInvestmentIntelligence(prop, metrics, activeLease, 1295.11)
@@ -297,9 +281,10 @@ export default function Overview() {
 
       {/* ── Cash Flow Chart ── */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <h3 style={{ marginBottom: 20 }}>Cash Flow History <span style={{ fontSize: '0.8rem', color: 'var(--text-subtle)', fontWeight: 400 }}>— click a month to drill in</span></h3>
-        <CashFlowChart data={summaryWithCumulative} />
+        <h3 style={{ marginBottom: 20 }}>Recent Cash Flow <span style={{ fontSize: '0.8rem', color: 'var(--text-subtle)', fontWeight: 400 }}>— last 6 months</span></h3>
+        <CashFlowChart data={summaryWithCumulative.slice(-6)} />
       </div>
+
 
 
       {/* ── Lease Tracker ── */}

@@ -13,7 +13,9 @@ interface FormValues {
 
 
 export function QuickAddForm() {
-  const { activePropertyId: propId } = useProperty()
+  const { activeProperty: prop } = useProperty()
+  const propId = prop?.id ?? null
+
   const { data: tags = [] }          = useTags(propId)
   const { data: txns = [] }          = useCurrentMonthTransactions(propId)
   const addTx                        = useAddTransaction()
@@ -52,7 +54,11 @@ export function QuickAddForm() {
           <div className="form-group">
             <label className="form-label" htmlFor="date">Date</label>
             <input id="date" type="date" className="form-input"
-              {...register('date', { required: 'Date is required' })} />
+              {...register('date', { required: 'Date is required' })}
+              min={prop?.purchase_date}
+              max={new Date().toISOString().split('T')[0]}
+            />
+
             {errors.date && <span className="form-error">{errors.date.message}</span>}
           </div>
 

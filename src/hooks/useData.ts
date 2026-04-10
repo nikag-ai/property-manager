@@ -19,21 +19,34 @@ export function useMetrics(propertyId: string | null) {
 }
 
 // ── MONTHLY SUMMARY ───────────────────────────────────────────────────────────
-export function useMonthlySummary(propertyId: string | null) {
+export function useMonthlySummary(propertyId: string | null, filters: { from?: string, to?: string } = {}) {
   return useQuery({
-    queryKey: keys.monthly(propertyId ?? ''),
+    queryKey: [...keys.monthly(propertyId ?? ''), filters],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from('v_monthly_summary')
         .select('*')
         .eq('property_id', propertyId)
         .order('month', { ascending: true })
+
+      if (filters.from) {
+        const fromDate = filters.from.length === 7 ? `${filters.from}-01` : filters.from
+        q = q.gte('month', fromDate)
+      }
+      if (filters.to) {
+        const toDate = filters.to.length === 7 ? `${filters.to}-01` : filters.to
+        q = q.lte('month', toDate)
+      }
+
+
+      const { data, error } = await q
       if (error) throw error
       return data as MonthlySummary[]
     },
     enabled: !!propertyId,
   })
 }
+
 
 // ── TRANSACTIONS ──────────────────────────────────────────────────────────────
 export function useTransactions(propertyId: string | null, filters: TransactionFilters = {}) {

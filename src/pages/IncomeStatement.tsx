@@ -2,7 +2,10 @@ import { useState, useMemo, Fragment } from 'react'
 
 import { useProperty } from '../contexts/PropertyContext'
 import { useTransactions, useTags } from '../hooks/useData'
-import { formatCurrency } from '../lib/utils'
+import { formatCurrency, formatMonthLabel } from '../lib/utils'
+import { MonthSelector } from '../components/common/MonthSelector'
+
+
 
 // Helper to get all months between two dates
 const getMonthsInRange = (start: string, end: string) => {
@@ -24,7 +27,9 @@ const formatMonthHeader = (m: string) => {
 }
 
 export default function IncomeStatement() {
-  const { activePropertyId: propId } = useProperty()
+  const { activeProperty: prop } = useProperty()
+  const propId = prop?.id ?? null
+
   
   // Default range: Last 6 months from current local month
   const now = new Date()
@@ -106,16 +111,27 @@ export default function IncomeStatement() {
         <h1 style={{ fontSize: '1.25rem' }}>Income Statement</h1>
         
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 'auto' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <input type="month" className="form-input" value={startMonth} 
-              onChange={e => setStartMonth(e.target.value)} />
-          </div>
-          <span style={{ color: 'var(--text-muted)' }}>to</span>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <input type="month" className="form-input" value={endMonth} 
-              onChange={e => setEndMonth(e.target.value)} />
-          </div>
+          <MonthSelector 
+            label="START" 
+            value={startMonth}
+            min={prop?.purchase_date?.substring(0, 7)}
+            max={new Date().toISOString().substring(0, 7)}
+            onChange={val => {
+              setStartMonth(val)
+              if (val > endMonth) setEndMonth(val)
+            }}
+          />
+          <MonthSelector 
+            label="END" 
+            value={endMonth}
+            min={startMonth || prop?.purchase_date?.substring(0, 7)}
+            max={new Date().toISOString().substring(0, 7)}
+            align="right"
+            onChange={setEndMonth}
+          />
         </div>
+
+
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

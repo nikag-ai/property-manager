@@ -19,7 +19,9 @@ interface FormValues {
 }
 
 export function TransactionEditModal({ isOpen, onClose, transaction }: TransactionEditModalProps) {
-  const { activePropertyId: propId } = useProperty()
+  const { activeProperty: prop } = useProperty()
+  const propId = prop?.id ?? null
+
   const { data: tags = [] } = useTags(propId)
   const updateTx = useUpdateTransaction()
 
@@ -81,7 +83,10 @@ export function TransactionEditModal({ isOpen, onClose, transaction }: Transacti
                 type="date" 
                 className="form-input"
                 {...register('date', { required: 'Date is required' })} 
+                min={prop?.purchase_date}
+                max={new Date().toISOString().split('T')[0]}
               />
+
               {errors.date && <span className="form-error">{errors.date.message}</span>}
             </div>
 

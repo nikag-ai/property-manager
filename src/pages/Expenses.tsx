@@ -3,6 +3,7 @@ import { useProperty } from '../contexts/PropertyContext'
 import { useTransactions } from '../hooks/useData'
 import { formatCurrency } from '../lib/utils'
 import { TransactionTable } from '../components/ledger/TransactionTable'
+import { DateSelector } from '../components/common/DateSelector'
 
 export default function Expenses() {
   const { activeProperty: prop } = useProperty()
@@ -84,16 +85,26 @@ export default function Expenses() {
       {/* Custom Date Filters */}
       {duration === 'custom' && (
         <div className="card" style={{ padding: '16px 20px', marginBottom: 24, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end', background: 'var(--surface-1)' }}>
-          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 140px' }}>
-            <label className="form-label">Start Date</label>
-            <input type="date" className="form-input" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-          </div>
-          <div className="form-group" style={{ marginBottom: 0, flex: '1 1 140px' }}>
-            <label className="form-label">End Date</label>
-            <input type="date" className="form-input" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
-          </div>
+          <DateSelector 
+            label="START" 
+            value={customStart} 
+            min={prop?.purchase_date}
+            max={new Date().toISOString().split('T')[0]}
+            onChange={val => {
+              setCustomStart(val)
+              if (customEnd && val > customEnd) setCustomEnd(val)
+            }}
+          />
+          <DateSelector 
+            label="END" 
+            value={customEnd} 
+            min={customStart || prop?.purchase_date}
+            max={new Date().toISOString().split('T')[0]}
+            align="right"
+            onChange={setCustomEnd}
+          />
           {(customStart || customEnd) && (
-            <button className="btn btn-ghost btn-sm" style={{ flex: '0 0 auto' }} onClick={() => { setCustomStart(''); setCustomEnd(''); }}>Clear Custom</button>
+            <button className="btn btn-ghost btn-sm" style={{ flex: '0 0 auto', marginLeft: 'auto' }} onClick={() => { setCustomStart(''); setCustomEnd(''); }}>Clear Custom</button>
           )}
         </div>
       )}
@@ -165,12 +176,15 @@ export default function Expenses() {
                   style={{ 
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
                     padding: '12px 16px', 
-                    borderLeft: `4px solid ${colors[idx % colors.length]}`,
-                    border: isSelected ? `2px solid var(--purple)` : undefined,
+                    borderTop: isSelected ? `2px solid var(--purple)` : '1px solid var(--border)',
+                    borderBottom: isSelected ? `2px solid var(--purple)` : '1px solid var(--border)',
+                    borderRight: isSelected ? `2px solid var(--purple)` : '1px solid var(--border)',
+                    borderLeft: isSelected ? `2px solid var(--purple)` : `4px solid ${colors[idx % colors.length]}`,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     gap: 12
                   }}>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ background: 'var(--surface-3)', padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                       {pct.toFixed(1)}%

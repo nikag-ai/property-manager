@@ -8,17 +8,15 @@ import { formatCurrency } from '../lib/utils'
 import { TransactionTable } from '../components/ledger/TransactionTable'
 import type { TransactionFilters } from '../lib/types'
 
-const formatDate = (d: string) => {
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: 'numeric' 
-  })
-}
+import { DateSelector } from '../components/common/DateSelector'
+import { formatDate } from '../lib/utils'
+
 
 
 export default function Ledger() {
-  const { activePropertyId: propId } = useProperty()
+  const { activeProperty: prop } = useProperty()
+  const propId = prop?.id ?? null
+
   const [searchParams, setSearchParams] = useSearchParams()
 
   const initFrom = searchParams.get('from') || ''
@@ -148,20 +146,36 @@ export default function Ledger() {
           <div className="form-group" style={{ flex: '1 1 240px' }}>
             <label className="form-label">Date Range</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="date" className="form-input" value={filters.date_from ?? ''}
-                onChange={e => {
-                  const next = { ...filters, date_from: e.target.value || undefined }
+              <DateSelector 
+                label="START" 
+                value={filters.date_from ?? ''}
+                min={prop?.purchase_date}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={val => {
+                  const next = { ...filters, date_from: val || undefined }
+                  if (val && filters.date_to && val > filters.date_to) {
+                    next.date_to = val
+                  }
                   setFilters(next)
                   updateUrl(next)
-                }} />
+                }} 
+              />
               <span style={{ color: 'var(--text-muted)' }}>–</span>
-              <input type="date" className="form-input" value={filters.date_to ?? ''}
-                onChange={e => {
-                  const next = { ...filters, date_to: e.target.value || undefined }
+              <DateSelector 
+                label="END" 
+                value={filters.date_to ?? ''}
+                min={filters.date_from || prop?.purchase_date}
+                max={new Date().toISOString().split('T')[0]}
+                align="right"
+                onChange={val => {
+                  const next = { ...filters, date_to: val || undefined }
                   setFilters(next)
                   updateUrl(next)
-                }} />
+                }} 
+              />
             </div>
+
+
           </div>
 
 
@@ -263,26 +277,36 @@ export default function Ledger() {
         </div>
 
         {/* Summary Stats */}
-        <div className="section-header" style={{ marginBottom: 16, background: 'var(--surface-2)', padding: '12px 20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', justifyContent: 'flex-start', gap: 32 }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="section-header" style={{ 
+          marginBottom: 16, 
+          background: 'var(--surface-2)', 
+          padding: '16px 20px', 
+          borderRadius: 'var(--radius-md)', 
+          border: '1px solid var(--border)', 
+          justifyContent: 'flex-start', 
+          gap: 24,
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 100 }}>
             <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Income</span>
-            <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>
               {formatCurrency(displayTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + (t.amount || 0), 0))}
             </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 100 }}>
             <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Expenses</span>
-            <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--red)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--red)', fontFamily: 'var(--font-mono)' }}>
               {formatCurrency(Math.abs(displayTransactions.filter(t => t.amount < 0).reduce((sum, t) => sum + (t.amount || 0), 0)))}
             </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 'auto', textAlign: 'right' }}>
+          <div className="net-flow-block" style={{ display: 'flex', flexDirection: 'column', marginLeft: 'auto', textAlign: 'right', minWidth: 120 }}>
             <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Net Flow</span>
-            <span style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
               {formatCurrency(displayTransactions.reduce((sum, t) => sum + (t.amount || 0), 0))}
             </span>
           </div>
         </div>
+
 
         <TransactionTable transactions={displayTransactions} isLoading={txLoading} />
 

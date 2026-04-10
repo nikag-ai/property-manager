@@ -1,5 +1,16 @@
 import { format, parseISO, differenceInDays } from 'date-fns'
 
+/** Short month list */
+export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** Short month label: "Jan 2025" from YYYY-MM */
+export function formatMonthLabel(m: string): string {
+  if (!m) return 'Select Month'
+  const [yy, mm] = m.split('-')
+  const date = new Date(Number(yy), Number(mm) - 1)
+  return format(date, 'MMM yyyy')
+}
+
 /** Format a number as USD currency */
 export function formatCurrency(n: number | null | undefined, opts?: { compact?: boolean }): string {
   if (n == null) return '—'
@@ -23,11 +34,6 @@ export function formatCurrency(n: number | null | undefined, opts?: { compact?: 
 export function formatPct(n: number | null | undefined, decimals = 1): string {
   if (n == null) return '—'
   return `${n.toFixed(decimals)}%`
-}
-
-/** Short month label: "Jan 2025" */
-export function formatMonthLabel(isoDate: string): string {
-  return format(parseISO(isoDate), 'MMM yyyy')
 }
 
 /** Format date: "Oct 10, 2025" */

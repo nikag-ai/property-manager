@@ -6,16 +6,16 @@ import { useMonthlySummary } from '../hooks/useData'
 import { CashFlowChart } from '../components/charts/CashFlowChart'
 
 
-import { formatCurrency } from '../lib/utils'
+import { MonthSelector } from '../components/common/MonthSelector'
+import { formatCurrency, formatMonthLabel } from '../lib/utils'
 
-const formatMonth = (m: string) => {
-  const [yy, mm] = m.split('-')
-  const date = new Date(Number(yy), Number(mm) - 1)
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-}
 
 export default function MonthlyBreakdown() {
-  const { activePropertyId: propId } = useProperty()
+
+
+  const { activeProperty: prop } = useProperty()
+  const propId = prop?.id ?? null
+
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
 
@@ -29,12 +29,16 @@ export default function MonthlyBreakdown() {
 
 
   // Sync URL → state when navigating here from chart click
+  const from = searchParams.get('from') ?? ''
+  const to   = searchParams.get('to')   ?? ''
+
   useEffect(() => {
     const v = searchParams.get('view')
     if (v === 'table' || v === 'chart') setViewMode(v as 'chart'|'table')
   }, [searchParams])
 
-  const { data: monthlySummary = [], isLoading: chartLoading } = useMonthlySummary(propId)
+  const { data: monthlySummary = [], isLoading: chartLoading } = useMonthlySummary(propId, { from, to })
+
 
 
   const switchView = (v: 'chart' | 'table') => {
@@ -103,11 +107,44 @@ export default function MonthlyBreakdown() {
           <span style={{ fontSize: '0.7rem', color: includeClosingCosts ? 'var(--text)' : 'var(--text-muted)' }}>Include Closing Costs</span>
         </div>
 
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginLeft: 'auto' }}>
+          <MonthSelector 
+            label="FROM" 
+            value={from} 
+            min={prop?.purchase_date?.substring(0, 7)}
+            max={new Date().toISOString().substring(0, 7)}
+            onChange={val => setSearchParams(prev => { 
+                if (val) {
+                  prev.set('from', val)
+                  const currentTo = prev.get('to') || to
+                  if (currentTo && val > currentTo) {
+                    prev.set('to', val)
+                  }
+                } else {
+                  prev.delete('from')
+                }
+                return prev 
+              }, { replace: true })}
+          />
+          <MonthSelector 
+            label="TO" 
+            value={to} 
+            min={from || prop?.purchase_date?.substring(0, 7)}
+            max={new Date().toISOString().substring(0, 7)}
+            align="right"
+            onChange={val => setSearchParams(prev => { if (val) prev.set('to', val); else prev.delete('to'); return prev }, { replace: true })}
+          />
+
+        </div>
+
+
+
         <div className="toggle-group">
           <button className={`toggle-btn${viewMode === 'chart'  ? ' active' : ''}`} onClick={() => switchView('chart')}>📊 Chart</button>
           <button className={`toggle-btn${viewMode === 'table' ? ' active' : ''}`} onClick={() => switchView('table')}>🧮 Summary</button>
         </div>
       </div>
+
 
       {viewMode === 'chart' ? (
         <div className="card">
@@ -155,7 +192,8 @@ export default function MonthlyBreakdown() {
 
 
                   >
-                    <td style={{ fontWeight: 600 }}>{formatMonth(row.month)}</td>
+                    <td style={{ fontWeight: 600 }}>{formatMonthLabel(row.month)}</td>
+
                     <td style={{ textAlign: 'right', color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.income)}</td>
                     <td style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.display_expenses)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--orange)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(row.maintenance + row.management_fee)}</td>
