@@ -2,14 +2,14 @@ export const APP_METADATA = {
   NAME: 'PropertyLedger',
   DESCRIPTION: 'Real estate investment tracking, honest numbers',
   DEFAULT_CSV_FILENAME: 'propertyledger-transactions.csv',
-};
+} as const;
 
 export const DATE_FORMATS = {
   DISPLAY_DATE: 'MMM d, yyyy',
   DISPLAY_MONTH: 'MMM yyyy',
   ISO_DATE: 'yyyy-MM-dd',
   ISO_MONTH: 'yyyy-MM',
-};
+} as const;
 
 export const DATA_LOGIC = {
   MONTH_NAMES: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -26,7 +26,7 @@ export const DATA_LOGIC = {
   },
   DEFAULT_HISTORICAL_MONTHS: 6,
   DEFAULT_VACANCY_START: 'purchase_date',
-};
+} as const;
 
 export const CHART_CONFIG = {
   HEIGHT: 320,

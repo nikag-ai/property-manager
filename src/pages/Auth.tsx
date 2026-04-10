@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate } from 'react-router-dom'
+import { APP_METADATA } from '../lib/constants'
 
 export default function Auth() {
   const { session } = useAuth()
